@@ -1,6 +1,8 @@
-# Ticketera - Core de Dominio Puro
+# Ticketera - Microservicio de Venta de Entradas (Hito 4)
 
-Ticketera es un sistema de venta de entradas para eventos independientes. Este repositorio contiene el **Core de Dominio Puro**, completamente aislado de frameworks, bases de datos o interfaces externas, siguiendo los principios de **Clean Architecture**, **Domain-Driven Design (DDD)** y **Hexagonal Architecture (Ports & Adapters)**.
+Ticketera es un sistema de venta de entradas para eventos independientes. Este repositorio evoluciona el **Core de Dominio Puro** construido en el Hito 3 hacia un **microservicio con Spring Boot, PostgreSQL y Docker**, manteniendo el núcleo (`domain` y `application`) completamente aislado de frameworks, siguiendo los principios de **Clean Architecture**, **Domain-Driven Design (DDD)** y **Hexagonal Architecture (Ports & Adapters)**.
+
+**Estado del Hito 4:** migración a Spring Boot y adaptador de persistencia JPA/PostgreSQL completados. Próximas fases: configuración por perfiles, capa web REST con manejo global de errores, Swagger/OpenAPI y Docker Compose.
 
 Repositorios que sirven de base a este proyecto:
 
@@ -18,6 +20,7 @@ Repositorios que sirven de base a este proyecto:
 - [Tecnologías y dependencias](#tecnologías-y-dependencias)
   - [Lenguaje y plataforma](#lenguaje-y-plataforma)
   - [Build](#build)
+  - [Dependencias principales](#dependencias-principales)
   - [Dependencias de testing (scope: test)](#dependencias-de-testing-scope-test)
   - [Plugins de Maven](#plugins-de-maven)
 - [Testing y Garantía de Calidad](#testing-y-garantía-de-calidad)
@@ -33,7 +36,7 @@ El proyecto está organizado en capas según Clean Architecture, con dependencia
 
 - **`domain`**: el corazón del sistema. Entidades (Aggregate Roots), Value Objects, excepciones de negocio y contratos (interfaces de repositorio y servicios). Sin dependencias de producción.
 - **`application`**: casos de uso que orquestan las reglas del dominio. Dependen únicamente de contratos de `domain`.
-- **`infrastructure`**: implementaciones concretas de los contratos (notificación por email; el adaptador de persistencia JPA/PostgreSQL se incorpora en las siguientes fases del hito 4). Aislada del dominio y **excluida del reporte de cobertura**.
+- **`infrastructure`**: adaptadores que implementan los contratos del dominio (persistencia JPA/PostgreSQL y notificación por email). Aislada del dominio y **excluida del reporte de cobertura**.
 
 Las interacciones externas se modelan como interfaces inyectadas por constructor, de modo que la capa de dominio nunca depende de una implementación concreta.
 
@@ -74,8 +77,12 @@ hito4-backend-spring-boot/
     │   │       ├── Money.java
     │   │       └── TicketQuantity.java
     │   └── infrastructure/
-    │       └── notification/
-    │           └── EmailNotificationService.java
+    │       ├── notification/
+    │       │   └── EmailNotificationService.java
+    │       └── persistence/
+    │           ├── EventEntity.java
+    │           ├── EventJpaRepository.java
+    │           └── JpaEventRepository.java
     └── test/java/com/ticketera/
         ├── application/usecase/
         │   ├── CreateEventUseCaseTest.java
@@ -96,6 +103,12 @@ hito4-backend-spring-boot/
 ```
 
 ### Descripción de archivos
+
+**Arranque del microservicio:**
+
+| Archivo | Responsabilidad |
+|---|---|
+| `TicketeraApplication.java` | Clase principal `@SpringBootApplication` ubicada en la raíz `com.ticketera`. Punto de entrada del microservicio; su escaneo de componentes cubre todas las capas. Excluida de la medición de cobertura por ser código de bootstrap sin lógica de negocio. |
 
 **Entidades (Aggregate Roots):**
 
@@ -150,9 +163,10 @@ hito4-backend-spring-boot/
 
 | Archivo | Responsabilidad |
 |---|---|
-| `EmailNotificationService.java` | Implementación de `MessageNotifier` que imprime el email en consola. |
-
-> **Nota:** durante el Hito 4 el adaptador de persistencia en memoria fue retirado y será reemplazado por el adaptador JPA/PostgreSQL (`EventEntity`, `EventJpaRepository`, `JpaEventRepository`).
+| `EventEntity.java` | Modelo de persistencia JPA (`@Entity`, tabla `events`) con columnas `id`, `name`, `venue`, `capacity` y `available_tickets`. Mapea desde/hacia el agregado `Event` mediante `fromDomain()`/`toDomain()`, manteniendo el dominio libre de anotaciones de persistencia. |
+| `EventJpaRepository.java` | Interfaz que hereda de `JpaRepository<EventEntity, String>` (Spring Data). Genera las operaciones CRUD de forma automática. |
+| `JpaEventRepository.java` | Adaptador `@Repository` que implementa el puerto del dominio `EventRepository`, delegando en `EventJpaRepository` y traduciendo entidad ↔ dominio. Reemplaza al antiguo repositorio en memoria del Hito 3. |
+| `EmailNotificationService.java` | Implementación `@Component` de `MessageNotifier` que imprime el email en consola. |
 
 ### Nota sobre la arquitectura
 
@@ -160,7 +174,7 @@ La estructura de este proyecto combina tres patrones complementarios:
 
 - **Clean Architecture**: separación en capas (`domain`, `application`, `infrastructure`) con dependencias apuntando hacia el núcleo.
 - **Domain-Driven Design (DDD)**: modelado del negocio con entidades, Value Objects auto-validantes, Aggregate Roots y lenguaje ubicuo.
-- **Hexagonal Architecture (Ports & Adapters)**: puertos (`application/port/`) para servicios externos y adaptadores (`infrastructure/`) para implementaciones concretas.
+- **Hexagonal Architecture (Ports & Adapters)**: puertos (`application/port/` y `domain/repository/`) para servicios externos y adaptadores (`infrastructure/persistence/`, `infrastructure/notification/`) para implementaciones concretas.
 
 **Diferencias con el proyecto de ejemplo del profesor (neonpulse):**
 
@@ -203,33 +217,43 @@ Glosario compartido entre el equipo de negocio y el equipo técnico. Cada térmi
 ## Tecnologías y dependencias
 
 ### Lenguaje y plataforma
-- **Java 17** (compilador source/target 17)
+- **Java 17** sobre **Spring Boot 3.5.7** (`spring-boot-starter-parent`)
+- **Hibernate** como proveedor JPA (incluido en `spring-boot-starter-data-jpa`)
 
 ### Build
 - **Apache Maven** — Sistema de construcción y gestión de dependencias
+- **spring-boot-maven-plugin** — Empaqueta el jar ejecutable y permite arrancar con `mvn spring-boot:run`
+
+### Dependencias principales
+
+| Dependencia | Versión | Propósito |
+|---|---|---|
+| `spring-boot-starter-web` | gestionada por Spring Boot | API REST con Spring Web MVC y Tomcat embebido |
+| `spring-boot-starter-validation` | gestionada por Spring Boot | Validación declarativa con Jakarta Bean Validation (`@Valid`, `@NotBlank`, etc.) |
+| `spring-boot-starter-data-jpa` | gestionada por Spring Boot | Persistencia con Spring Data JPA e Hibernate |
+| `postgresql` | gestionada por Spring Boot | Driver JDBC de PostgreSQL (scope `runtime`) |
+| `springdoc-openapi-starter-webmvc-ui` | 2.8.9 | Especificación OpenAPI 3 y Swagger UI interactiva |
 
 ### Dependencias de testing (scope: test)
 
 | Dependencia | Versión | Propósito |
 |---|---|---|
-| `junit-jupiter-api` | 5.11.0 | Anotaciones y asserts de JUnit 5 (`@Test`, `@DisplayName`, `assertEquals`, `assertThrows`, etc.) |
-| `junit-jupiter-engine` | 5.11.0 | Motor de ejecución de tests de JUnit 5 |
-| `junit-jupiter-params` | 5.10.2 | Soporte para tests parametrizados (`@ParameterizedTest`, `@ValueSource`) |
-| `mockito-core` | 5.11.0 | Framework de mocking para crear objetos simulados y verificar interacciones (`mock()`, `verify()`, `when()`) |
+| `spring-boot-starter-test` | gestionada por Spring Boot | Incluye JUnit 5 (API, engine y params), Mockito, AssertJ y MockMvc para las siguientes fases |
 
 ### Plugins de Maven
 
 | Plugin | Versión | Propósito |
 |---|---|---|
-| `maven-surefire-plugin` | 3.2.5 | Ejecuta la suite de tests con soporte para nombres legibles de JUnit 5 |
-| `jacoco-maven-plugin` | 0.8.15 | Instrumenta el código y genera reportes de cobertura (instrucciones, ramas, métodos, líneas). Excluye `com/ticketera/infrastructure/**` |
+| `spring-boot-maven-plugin` | 3.5.7 | Genera el jar ejecutable y habilita `mvn spring-boot:run` |
+| `maven-surefire-plugin` | gestionada por Spring Boot | Ejecuta la suite de tests con soporte para nombres legibles de JUnit 5 |
+| `jacoco-maven-plugin` | 0.8.15 | Instrumenta el código y genera reportes de cobertura (instrucciones, ramas, métodos, líneas). Excluye `com/ticketera/infrastructure/**` y la clase bootstrap `TicketeraApplication` |
 | `jacoco-console-reporter` | 1.3.2 | Imprime un resumen de cobertura directamente en la consola |
 
-> **Nota sobre cobertura:** la capa `infrastructure` (detalles técnicos: notificador por email y adaptadores de persistencia) y los contratos de `domain/repository` (interfaces puras sin lógica) quedan **excluidos** del reporte de cobertura. Esto se configura con la propiedad `sonar.coverage.exclusions` (usada por el console-reporter) y con `<excludes>` en `jacoco-maven-plugin` (usada por el reporte HTML). La cobertura se mide sobre `domain` (entidades, value objects, excepciones) y `application` (casos de uso).
+> **Nota sobre cobertura:** la capa `infrastructure` (detalles técnicos: adaptador de persistencia JPA y notificador por email), los contratos de `domain/repository` (interfaces puras sin lógica) y la clase bootstrap `TicketeraApplication` quedan **excluidos** del reporte de cobertura. Esto se configura con la propiedad `sonar.coverage.exclusions` (usada por el console-reporter) y con `<excludes>` en `jacoco-maven-plugin` (usada por el reporte HTML). La cobertura se mide sobre `domain` (entidades, value objects, excepciones) y `application` (casos de uso).
 
 ## Testing y Garantía de Calidad
 
-Este proyecto utiliza **JUnit 5** y **Mockito** para asegurar los más altos estándares de calidad.
+Este proyecto utiliza **JUnit 5** y **Mockito** (gestionados por el BOM de Spring Boot) para asegurar los más altos estándares de calidad. La suite se mantiene como **tests unitarios puros**: no levanta contexto de Spring ni requiere base de datos, lo que la hace rápida y determinista; las pruebas de integración (controladores, persistencia real) se incorporan en las siguientes fases del hito.
 
 - **Patrón AAA Estricto**: Todos los tests están estructurados rigurosamente usando las fases Arrange, Act y Assert.
 - **Excepciones de Negocio**: Las excepciones personalizadas se verifican exhaustivamente usando `assertThrows`.
@@ -262,6 +286,8 @@ Este proyecto utiliza **JUnit 5** y **Mockito** para asegurar los más altos est
 ```bash
 mvn clean compile
 ```
+
+> El arranque del microservicio (`mvn spring-boot:run`) requiere la configuración por perfiles, Docker Compose y PostgreSQL que se incorporan en las siguientes fases; por ahora el entregable verificable es la suite de tests.
 
 ### Ejecutar la suite de pruebas unitarias
 
