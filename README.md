@@ -2,7 +2,7 @@
 
 Ticketera es un sistema de venta de entradas para eventos independientes. Este repositorio evoluciona el **Core de Dominio Puro** construido en el Hito 3 hacia un **microservicio con Spring Boot, PostgreSQL y Docker**, manteniendo el núcleo (`domain` y `application`) completamente aislado de frameworks, siguiendo los principios de **Clean Architecture**, **Domain-Driven Design (DDD)** y **Hexagonal Architecture (Ports & Adapters)**.
 
-**Estado del Hito 4:** migración a Spring Boot, adaptador de persistencia JPA/PostgreSQL y capa web REST con manejo global de errores completados. Próximas fases: configuración por perfiles con Swagger/OpenAPI, Docker Compose con PostgreSQL y colección de pruebas Bruno.
+**Estado del Hito 4:** migración a Spring Boot, adaptador de persistencia JPA/PostgreSQL, capa web REST con manejo global de errores, configuración por perfiles (dev/prod) con Swagger aislado y Docker Compose con PostgreSQL, **completados**. Fase restante: colección de pruebas de contrato con Bruno.
 
 Repositorios que sirven de base a este proyecto:
 
@@ -27,6 +27,10 @@ Repositorios que sirven de base a este proyecto:
 - [Testing y Garantía de Calidad](#testing-y-garantía-de-calidad)
   - [Resumen de cobertura por clase](#resumen-de-cobertura-por-clase)
 - [Instrucciones de ejecución](#instrucciones-de-ejecución)
+  - [Levantar la base de datos con Docker](#levantar-la-base-de-datos-con-docker)
+  - [Arrancar el microservicio en perfil dev](#arrancar-el-microservicio-en-perfil-dev)
+  - [Arrancar el microservicio en perfil prod](#arrancar-el-microservicio-en-perfil-prod)
+  - [Verificar la persistencia en PostgreSQL](#verificar-la-persistencia-en-postgresql)
   - [Compilar y verificar el proyecto](#compilar-y-verificar-el-proyecto)
   - [Ejecutar la suite de pruebas unitarias](#ejecutar-la-suite-de-pruebas-unitarias)
   - [Generar el reporte de cobertura JaCoCo](#generar-el-reporte-de-cobertura-jacoco)
@@ -46,6 +50,8 @@ Las interacciones externas se modelan como interfaces inyectadas por constructor
 ```
 hito4-backend-spring-boot/
 ├── pom.xml
+├── compose.yaml
+├── .env.example
 ├── README.md
 └── src/
     ├── main/java/com/ticketera/
@@ -78,6 +84,10 @@ hito4-backend-spring-boot/
     │   │       ├── Money.java
     │   │       └── TicketQuantity.java
     │   └── infrastructure/
+    │       ├── config/
+    │       │   ├── ApplicationConfig.java
+    │       │   ├── DevDataSeeder.java
+    │       │   └── OpenApiConfig.java
     │       ├── notification/
     │       │   └── EmailNotificationService.java
     │       ├── persistence/
@@ -94,6 +104,10 @@ hito4-backend-spring-boot/
     │           ├── EventController.java
     │           ├── GlobalExceptionHandler.java
     │           └── TicketOrderController.java
+    ├── main/resources/
+    │   ├── application.yml
+    │   ├── application-dev.yml
+    │   └── application-prod.yml
     └── test/java/com/ticketera/
         ├── application/usecase/
         │   ├── CreateEventUseCaseTest.java
@@ -123,6 +137,24 @@ hito4-backend-spring-boot/
 | Archivo | Responsabilidad |
 |---|---|
 | `TicketeraApplication.java` | Clase principal `@SpringBootApplication` ubicada en la raíz `com.ticketera`. Punto de entrada del microservicio; su escaneo de componentes cubre todas las capas. Excluida de la medición de cobertura por ser código de bootstrap sin lógica de negocio. |
+
+**Configuración de Spring (composition root y perfiles):**
+
+| Archivo | Responsabilidad |
+|---|---|
+| `ApplicationConfig.java` | Clase `@Configuration` que actúa como *composition root*: registra los cinco casos de uso como beans (`@Bean`), inyectándoles los adaptadores de infraestructura. Mantiene `domain` y `application` libres de anotaciones de framework. |
+| `OpenApiConfig.java` | Bean `OpenAPI` con la metadata de la documentación. Anotado con `@Profile("dev")`: fuera del perfil dev ni siquiera se registra en el contexto. |
+| `DevDataSeeder.java` | `CommandLineRunner` acotado al perfil `dev`: siembra dos eventos de ejemplo solo si la tabla `events` está vacía. |
+
+**Recursos de configuración e infraestructura local:**
+
+| Archivo | Responsabilidad |
+|---|---|
+| `src/main/resources/application.yml` | Configuración común: puerto `8081`, nombre de la aplicación y perfil por defecto (`dev`). |
+| `src/main/resources/application-dev.yml` | Perfil desarrollo: credenciales locales de Docker, `ddl-auto: update`, SQL en consola y Swagger habilitado. |
+| `src/main/resources/application-prod.yml` | Perfil producción: credenciales externalizadas (`TICKETERA_DB_URL/USERNAME/PASSWORD`), `ddl-auto: validate`, SQL silencioso y Swagger deshabilitado. Importa opcionalmente el archivo `.env`. |
+| `compose.yaml` | Docker Compose que provisiona el contenedor PostgreSQL 16 usado en desarrollo. |
+| `.env.example` | Plantilla commiteada con las variables que espera el perfil prod; se copia a `.env` (ignorado por git) para ejecutar en modo producción. |
 
 **Entidades (Aggregate Roots):**
 
@@ -248,7 +280,7 @@ Glosario compartido entre el equipo de negocio y el equipo técnico. Cada térmi
 
 ## API REST
 
-La capa web expone rutas semánticas bajo `/api/v1` con los verbos HTTP correspondientes. Los controladores son delgados: validan la entrada de forma perimetral con Jakarta Bean Validation y delegan la lógica en los casos de uso; nunca acceden al dominio directamente.
+La capa web expone rutas semánticas bajo `/api/v1` con los verbos HTTP correspondientes. Los controladores son delgados: validan la entrada de forma perimetral con Jakarta Bean Validation y delegan la lógica en los casos de uso; nunca acceden al dominio directamente. El servicio escucha en el puerto **8081**, por lo que la URL base es `http://localhost:8081`.
 
 | Método | Ruta | Descripción | Éxito | Errores |
 |---|---|---|---|---|
@@ -279,6 +311,77 @@ Ejemplo de respuesta de error:
 }
 ```
 
+## Documentación interactiva (Swagger UI)
+
+Gracias a `springdoc-openapi-starter-webmvc-ui`, la API se autodocumenta bajo especificación OpenAPI 3:
+
+| Artefacto | URL |
+|---|---|
+| Swagger UI (consola interactiva) | `http://localhost:8081/swagger-ui.html` |
+| Especificación OpenAPI JSON | `http://localhost:8081/v3/api-docs` |
+
+El aislamiento por perfil —requisito del hito— está blindado por partida doble:
+
+1. **Propiedades**: `springdoc.api-docs.enabled=false` y `springdoc.swagger-ui.enabled=false` en `application-prod.yml`.
+2. **Contexto**: el bean de metadata (`OpenApiConfig`) lleva `@Profile("dev")`, por lo que no llega a registrarse si el perfil activo no es `dev`.
+
+Resultado verificado: con perfil `dev` la consola es plenamente operativa; con perfil `prod` tanto `/swagger-ui.html` como `/v3/api-docs` quedan bloqueados mientras la API de negocio sigue atendiendo peticiones normalmente.
+
+## Infraestructura Docker
+
+`compose.yaml` provisiona la base de datos de desarrollo:
+
+| Aspecto | Valor |
+|---|---|
+| Imagen | `postgres:16-alpine` |
+| Contenedor | `pg-ticketera` |
+| Puerto expuesto | `5433` → `5432` |
+| Base de datos / usuario / contraseña | `ticketera_db` / `user_ticketera` / `pass_ticketera` |
+| Volumen | `postgres_data` (persistencia entre reinicios) |
+| Healthcheck | `pg_isready` cada 5 s |
+
+Las credenciales coinciden con las del `application-dev.yml`, de modo que el microservicio conecta sin pasos adicionales una vez el contenedor está healthy.
+
+## Perfiles de ejecución
+
+| Aspecto | `dev` (por defecto) | `prod` |
+|---|---|---|
+| Activación | Automática (`spring.profiles.default: dev`) | `-Dspring-boot.run.profiles=prod` |
+| Credenciales BD | Fijas en `application-dev.yml` | Externalizadas en variables `TICKETERA_DB_*` (entorno o archivo `.env`) |
+| Esquema | `ddl-auto: update` (crea/actualiza tablas) | `ddl-auto: validate` (solo valida contra las entidades) |
+| SQL en consola | Sí (`show-sql: true`) | No |
+| Swagger UI / api-docs | Habilitados | Bloqueados (propiedades + `@Profile("dev")`) |
+| Datos semilla | `DevDataSeeder` inserta 2 eventos si la tabla está vacía | No corre (sin seed en producción) |
+
+Datos semilla del perfil dev:
+
+| Evento | Venue | Capacidad | Disponibles |
+|---|---|---|---|
+| `evt-jazz-001` Jazz Night | Gran Teatro Lima | 500 | 500 |
+| `evt-rock-002` Rock Fest | Estadio Nacional | 5000 | 3800 (1200 reservadas) |
+
+> **Nota sobre `.env` y seguridad:** el perfil prod resuelve `TICKETERA_DB_URL`, `TICKETERA_DB_USERNAME` y `TICKETERA_DB_PASSWORD` desde variables de entorno del sistema o desde el archivo `.env` (importado vía `spring.config.import`). `.env` está ignorado por git; solo se commitea la plantilla `.env.example`. En este proyecto académico la plantilla contiene los valores reales porque ya son públicos en `compose.yaml`; en un entorno empresarial llevaría placeholders y los secretos residirían en un gestor especializado (Vault, secrets del orquestador, etc.).
+
+### Verificación del aislamiento (receta del evaluador)
+
+Con Docker y la base de datos levantados:
+
+```powershell
+# 1) Perfil dev: Swagger visible
+mvn spring-boot:run
+#    -> http://localhost:8081/swagger-ui.html opera con normalidad
+
+# 2) Perfil prod: Swagger bloqueado, API operativa (crear .env solo la primera vez)
+Copy-Item .env.example .env
+mvn spring-boot:run "-Dspring-boot.run.profiles=prod"
+```
+
+| URL con perfil prod activo | Resultado esperado |
+|---|---|
+| `/api/v1/events` | 200 con la cartelera |
+| `/swagger-ui.html` | Bloqueada (error; sin consola interactiva) |
+| `/v3/api-docs` | Bloqueada (sin especificación expuesta) |
+
 ## Tecnologías y dependencias
 
 ### Lenguaje y plataforma
@@ -288,6 +391,10 @@ Ejemplo de respuesta de error:
 ### Build
 - **Apache Maven** — Sistema de construcción y gestión de dependencias
 - **spring-boot-maven-plugin** — Empaqueta el jar ejecutable y permite arrancar con `mvn spring-boot:run`
+
+### Infraestructura
+- **Docker / Docker Compose** — Provisiona la base de datos del microservicio (`compose.yaml`)
+- **PostgreSQL 16** — Base de datos relacional persistente (contenedor `pg-ticketera`, puerto `5433`)
 
 ### Dependencias principales
 
@@ -348,13 +455,59 @@ Este proyecto utiliza **JUnit 5** y **Mockito** (gestionados por el BOM de Sprin
 
 ## Instrucciones de ejecución
 
+### Levantar la base de datos con Docker
+
+Requisito previo: Docker Desktop en ejecución.
+
+```bash
+docker compose up -d      # inicia pg-ticketera
+docker compose ps         # esperar el estado "healthy"
+```
+
+Para detenerla conservando los datos: `docker compose stop`. Para reiniciarla desde cero borrando datos: `docker compose down -v`.
+
+### Arrancar el microservicio en perfil dev
+
+Es el perfil por defecto: no requiere argumentos ni variables adicionales.
+
+```bash
+mvn spring-boot:run
+```
+
+Al iniciar, `DevDataSeeder` siembra la cartelera si la tabla está vacía. Verificaciones rápidas:
+
+- Swagger UI: `http://localhost:8081/swagger-ui.html`
+- Cartelera: `http://localhost:8081/api/v1/events`
+
+### Arrancar el microservicio en perfil prod
+
+Crear primero el `.env` local a partir de la plantilla (solo la primera vez):
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Luego arrancar con el perfil activado:
+
+```powershell
+mvn spring-boot:run "-Dspring-boot.run.profiles=prod"
+```
+
+En este perfil el esquema solo se valida (`ddl-auto: validate`) y Swagger queda bloqueado; ver [Perfiles de ejecución](#perfiles-de-ejecución).
+
+### Verificar la persistencia en PostgreSQL
+
+```bash
+docker exec -it pg-ticketera psql -U user_ticketera -d ticketera_db -c "SELECT id, name, capacity, available_tickets FROM events;"
+```
+
+Tras registrar una compra, `available_tickets` debe reflejar el descuento correspondiente.
+
 ### Compilar y verificar el proyecto
 
 ```bash
 mvn clean compile
 ```
-
-> El arranque del microservicio (`mvn spring-boot:run`) requiere la configuración por perfiles, Docker Compose y PostgreSQL que se incorporan en las siguientes fases; por ahora el entregable verificable es la suite de tests.
 
 ### Ejecutar la suite de pruebas unitarias
 

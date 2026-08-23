@@ -5,6 +5,8 @@ import com.ticketera.application.usecase.CreateEventUseCase;
 import com.ticketera.application.usecase.GetEventDetailsUseCase;
 import com.ticketera.application.usecase.GetEventsUseCase;
 import com.ticketera.application.usecase.ProcessOrderUseCase;
+import com.ticketera.application.usecase.SendBookingConfirmationUseCase;
+
 import com.ticketera.domain.repository.EventRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,5 +32,10 @@ public class ApplicationConfig {
     @Bean
     public GetEventDetailsUseCase getEventDetailsUseCase(EventRepository repository) {
         return new GetEventDetailsUseCase(repository);
+    }
+
+    @Bean
+    public SendBookingConfirmationUseCase sendBookingConfirmationUseCase(MessageNotifier notifier) {
+        return new SendBookingConfirmationUseCase(notifier);
     }
 }
