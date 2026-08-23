@@ -2,7 +2,10 @@
 
 Ticketera es un sistema de venta de entradas para eventos independientes. Este repositorio contiene el **Core de Dominio Puro**, completamente aislado de frameworks, bases de datos o interfaces externas, siguiendo los principios de **Clean Architecture**, **Domain-Driven Design (DDD)** y **Hexagonal Architecture (Ports & Adapters)**.
 
-Repositorio original del **Hito 1** (base de este proyecto): [hito1-ticketera](https://github.com/pablocelva/hito1-ticketera)
+Repositorios que sirven de base a este proyecto:
+
+- **Hito 1** (núcleo inicial de la ticketera): [hito1-ticketera](https://github.com/pablocelva/hito1-ticketera)
+- **Hito 3** (refactor DDD / Clean-Hexagonal): [hito3-backend-domain-driven-design](https://github.com/pablocelva/hito3-backend-domain-driven-design)
 
 ## Índice
 
@@ -30,14 +33,14 @@ El proyecto está organizado en capas según Clean Architecture, con dependencia
 
 - **`domain`**: el corazón del sistema. Entidades (Aggregate Roots), Value Objects, excepciones de negocio y contratos (interfaces de repositorio y servicios). Sin dependencias de producción.
 - **`application`**: casos de uso que orquestan las reglas del dominio. Dependen únicamente de contratos de `domain`.
-- **`infrastructure`**: implementaciones concretas de los contratos (repositorio en memoria, notificación por email). Aislada del dominio y **excluida del reporte de cobertura**.
+- **`infrastructure`**: implementaciones concretas de los contratos (notificación por email; el adaptador de persistencia JPA/PostgreSQL se incorpora en las siguientes fases del hito 4). Aislada del dominio y **excluida del reporte de cobertura**.
 
 Las interacciones externas se modelan como interfaces inyectadas por constructor, de modo que la capa de dominio nunca depende de una implementación concreta.
 
 ### Estructura del directorio
 
 ```
-hito3-backend-domain-driven-design/
+hito4-backend-spring-boot/
 ├── pom.xml
 ├── README.md
 └── src/
@@ -46,6 +49,10 @@ hito3-backend-domain-driven-design/
     │   │   ├── port/
     │   │   │   └── MessageNotifier.java
     │   │   └── usecase/
+    │   │       ├── CreateEventUseCase.java
+    │   │       ├── GetEventDetailsUseCase.java
+    │   │       ├── GetEventsUseCase.java
+    │   │       ├── OrderResult.java
     │   │       ├── ProcessOrderUseCase.java
     │   │       └── SendBookingConfirmationUseCase.java
     │   ├── domain/
@@ -54,6 +61,7 @@ hito3-backend-domain-driven-design/
     │   │   │   ├── Event.java
     │   │   │   └── TicketPool.java
     │   │   ├── exception/
+    │   │   │   ├── EventNotFoundException.java
     │   │   │   ├── InvalidEmailException.java
     │   │   │   ├── InvalidOrderException.java
     │   │   │   └── SoldOutException.java
@@ -65,12 +73,13 @@ hito3-backend-domain-driven-design/
     │   │       ├── Money.java
     │   │       └── TicketQuantity.java
     │   └── infrastructure/
-    │       ├── notification/
-    │       │   └── EmailNotificationService.java
-    │       └── persistence/
-    │           └── InMemoryEventRepository.java
+    │       └── notification/
+    │           └── EmailNotificationService.java
     └── test/java/com/ticketera/
         ├── application/usecase/
+        │   ├── CreateEventUseCaseTest.java
+        │   ├── GetEventDetailsUseCaseTest.java
+        │   ├── GetEventsUseCaseTest.java
         │   ├── ProcessOrderUseCaseTest.java
         │   └── SendBookingConfirmationUseCaseTest.java
         ├── domain/
@@ -83,9 +92,6 @@ hito3-backend-domain-driven-design/
         │       ├── EventIdTest.java
         │       ├── MoneyTest.java
         │       └── TicketQuantityTest.java
-        └── infrastructure/
-            └── persistence/
-                └── InMemoryEventRepositoryTest.java
 ```
 
 ### Descripción de archivos
@@ -94,8 +100,8 @@ hito3-backend-domain-driven-design/
 
 | Archivo | Responsabilidad |
 |---|---|
-| `Event.java` | Aggregate Root del contexto Ticketing. Identificado por un `EventId` (Value Object). Contiene nombre, venue, capacidad y delega el control de inventario a su `TicketPool`. Expone `hasAvailability()`, `getAvailableTickets()`, `getTicketSold()` y `reserveTickets(TicketQuantity)` como único punto de entrada para modificar el inventario. |
-| `TicketPool.java` | Entidad interna que gestiona el stock de entradas disponibles. Valida que la capacidad sea positiva y que haya stock suficiente antes de reservar, evitando la sobreventa. |
+| `Event.java` | Aggregate Root del contexto Ticketing. Identificado por un `EventId` (Value Object). Contiene nombre, venue, capacidad y delega el control de inventario a su `TicketPool`. Expone `hasAvailability()`, `getAvailableTickets()`, `getTicketSold()` y `reserveTickets(TicketQuantity)` como único punto de entrada para modificar el inventario. Incluye la fábrica estática `reconstitute(...)` para reconstruir el agregado desde la base de datos preservando las entradas disponibles. |
+| `TicketPool.java` | Entidad interna que gestiona el stock de entradas disponibles. Valida que la capacidad sea positiva y que haya stock suficiente antes de reservar, evitando la sobreventa. Su constructor de reconstitución `(capacidad, disponibles)` valida que las disponibles estén entre 0 y la capacidad. |
 | `Customer.java` | Entidad que representa a la persona que compra entradas, identificada por un `id` único y un email válido (Value Object `Email`). |
 
 **Value Objects:**
@@ -111,8 +117,12 @@ hito3-backend-domain-driven-design/
 
 | Archivo | Responsabilidad |
 |---|---|
-| `ProcessOrderUseCase.java` | Procesa una orden: construye los Value Objects, busca el evento en el repositorio, reserva las entradas y notifica al administrador. Depende de `EventRepository` y `MessageNotifier` (inyectados por constructor). |
+| `ProcessOrderUseCase.java` | Procesa una orden: construye los Value Objects, busca el evento (`EventNotFoundException` si no existe), reserva las entradas, **persiste el cambio con `save()`**, notifica al administrador y retorna un `OrderResult` con el detalle de la compra. Depende de `EventRepository` y `MessageNotifier` (inyectados por constructor). |
+| `CreateEventUseCase.java` | Crea un nuevo evento generando su identificador (`UUID`), delegando las validaciones al dominio y persistiéndolo. Depende de `EventRepository`. |
+| `GetEventsUseCase.java` | Consulta la cartelera completa delegando en `EventRepository.findAll()`. |
+| `GetEventDetailsUseCase.java` | Consulta un evento por identificador y lanza `EventNotFoundException` cuando no existe. |
 | `SendBookingConfirmationUseCase.java` | Envía una confirmación de reserva al cliente. Depende de `MessageNotifier` (inyectado por constructor). |
+| `OrderResult.java` | Record de aplicación que transporta el resultado de una orden (evento, nombre, cantidad comprada y restante) hacia la capa de presentación sin exponer entidades del dominio. |
 
 **Puertos de Aplicación:**
 
@@ -124,13 +134,14 @@ hito3-backend-domain-driven-design/
 
 | Archivo | Responsabilidad |
 |---|---|
-| `EventRepository.java` | Contrato para acceso a datos de eventos (`Optional<Event> findById(EventId)`, `save`). Permite cambiar la fuente de datos sin modificar el dominio. |
+| `EventRepository.java` | Contrato para acceso a datos de eventos (`Optional<Event> findById(EventId)`, `List<Event> findAll()`, `void save(Event)`). Permite cambiar la fuente de datos sin modificar el dominio. |
 
 **Excepciones personalizadas:**
 
 | Archivo | Responsabilidad |
 |---|---|
 | `SoldOutException.java` | Se lanza cuando no hay entradas suficientes para satisfacer una reserva. |
+| `EventNotFoundException.java` | Se lanza cuando no existe el evento solicitado (se mapeará a HTTP 404 desde la capa web). |
 | `InvalidOrderException.java` | Se lanza cuando una orden tiene datos inválidos (cantidad o precio ≤ 0). |
 | `InvalidEmailException.java` | Se lanza cuando un email no es válido. |
 
@@ -138,8 +149,9 @@ hito3-backend-domain-driven-design/
 
 | Archivo | Responsabilidad |
 |---|---|
-| `InMemoryEventRepository.java` | Implementación en memoria de `EventRepository` (HashMap). |
 | `EmailNotificationService.java` | Implementación de `MessageNotifier` que imprime el email en consola. |
+
+> **Nota:** durante el Hito 4 el adaptador de persistencia en memoria fue retirado y será reemplazado por el adaptador JPA/PostgreSQL (`EventEntity`, `EventJpaRepository`, `JpaEventRepository`).
 
 ### Nota sobre la arquitectura
 
@@ -212,7 +224,7 @@ Glosario compartido entre el equipo de negocio y el equipo técnico. Cada térmi
 | `jacoco-maven-plugin` | 0.8.15 | Instrumenta el código y genera reportes de cobertura (instrucciones, ramas, métodos, líneas). Excluye `com/ticketera/infrastructure/**` |
 | `jacoco-console-reporter` | 1.3.2 | Imprime un resumen de cobertura directamente en la consola |
 
-> **Nota sobre cobertura:** la capa `infrastructure` (detalles técnicos: repositorio en memoria y notificador por email) y los contratos de `domain/repository` (interfaces puras sin lógica) quedan **excluidos** del reporte de cobertura. Esto se configura con la propiedad `sonar.coverage.exclusions` (usada por el console-reporter) y con `<excludes>` en `jacoco-maven-plugin` (usada por el reporte HTML). La cobertura se mide sobre `domain` (entidades, value objects, excepciones) y `application` (casos de uso).
+> **Nota sobre cobertura:** la capa `infrastructure` (detalles técnicos: notificador por email y adaptadores de persistencia) y los contratos de `domain/repository` (interfaces puras sin lógica) quedan **excluidos** del reporte de cobertura. Esto se configura con la propiedad `sonar.coverage.exclusions` (usada por el console-reporter) y con `<excludes>` en `jacoco-maven-plugin` (usada por el reporte HTML). La cobertura se mide sobre `domain` (entidades, value objects, excepciones) y `application` (casos de uso).
 
 ## Testing y Garantía de Calidad
 
@@ -220,23 +232,27 @@ Este proyecto utiliza **JUnit 5** y **Mockito** para asegurar los más altos est
 
 - **Patrón AAA Estricto**: Todos los tests están estructurados rigurosamente usando las fases Arrange, Act y Assert.
 - **Excepciones de Negocio**: Las excepciones personalizadas se verifican exhaustivamente usando `assertThrows`.
-- **Cobertura 100%**: La suite de tests garantiza 100% de cobertura de Instrucciones, Ramas, Métodos y Líneas sobre `domain` y `application` (la capa `infrastructure` está excluida por configurarse como detalles técnicos).
+- **Cobertura 100%**: La suite garantiza 100% de cobertura de Líneas, Ramas y Métodos sobre las 17 clases concretas de `domain` y `application`. La capa `infrastructure` está excluida por configurarse como detalle técnico, igual que los contratos sin lógica (`domain/repository`).
 
 ### Resumen de cobertura por clase
 
 | Clase | Tests | Cobertura |
 |---|---|---|
-| `Event` | 7 | `hasAvailability()` true + false, `reserveTickets` éxito/sold out/cantidad inválida, cálculo de disponibles y vendidas |
-| `TicketPool` | 5 | `capacity ≤ 0`, `quantity ≤ 0`, `quantity > available`, éxito, pool vacío |
+| `Event` | 8 | `hasAvailability()` true + false, `reserveTickets` éxito/sold out/cantidad inválida, cálculo de disponibles/vendidas y reconstitución desde persistencia |
+| `TicketPool` | 9 | `capacity ≤ 0`, `quantity ≤ 0`, `quantity > available`, éxito, pool vacío, reconstitución válida e inválida (disponibles fuera de rango, capacidad no positiva) |
 | `Customer` | 5 | Creación válida, `id` null/blank, `name` null/blank |
 | `TicketQuantity` | 4 | Valor válido, `quantity ≤ 0` |
 | `Money` | 4 | Valor válido, `price ≤ 0` |
 | `Email` | 5 | Normalización, `null`, blank, sin `@`, sin dominio |
 | `EventId` | 3 | Trim, `null`, blank |
-| `ProcessOrderUseCase` | 5 | `eventId` null/vacío, `quantity ≤ 0`, evento no encontrado, éxito |
+| `ProcessOrderUseCase` | 5 | `eventId` null/vacío, `quantity ≤ 0`, evento no encontrado, éxito con persistencia y retorno de `OrderResult` |
 | `SendBookingConfirmationUseCase` | 3 | Email null/vacío, éxito |
-| `InMemoryEventRepository` | 2 | Evento inexistente, guardar y recuperar |
-| **Total** | **43 tests** | **100% de clases, ramas, métodos y líneas** |
+| `CreateEventUseCase` | 2 | Creación válida (id generado + persistencia), validación delegada al dominio |
+| `GetEventDetailsUseCase` | 2 | Evento encontrado, `EventNotFoundException` cuando no existe |
+| `GetEventsUseCase` | 1 | Retorna la cartelera completa desde el repositorio |
+| **Total** | **51 tests** | **100% de líneas, ramas y métodos** sobre las 17 clases concretas |
+
+¹ El contador de clases del console-reporter reporta 17/18 porque incluye la interfaz `MessageNotifier` (contrato sin código ejecutable); los contratos de `domain/repository` quedan excluidos por configuración.
 
 ## Instrucciones de ejecución
 

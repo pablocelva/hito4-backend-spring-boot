@@ -18,6 +18,18 @@ public class Event {
         this.ticketPool = new TicketPool(capacity);
     }
 
+    public static Event reconstitute(EventId id, String name, String venue, int capacity, int availableTickets) {
+        return new Event(id, name, venue, capacity, availableTickets);
+    }
+    
+    private Event(EventId id, String name, String venue, int capacity, int availableTickets) {
+        this.id = id;
+        this.name = name;
+        this.venue = venue;
+        this.capacity = capacity;
+        this.ticketPool = new TicketPool(capacity, availableTickets);
+    }
+
     public EventId getId() {
         return id;
     }

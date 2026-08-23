@@ -13,6 +13,16 @@ public class TicketPool {
         this.available = capacity;
     }
 
+    public TicketPool(int capacity, int available) {
+        if (capacity <= 0) {
+            throw new IllegalArgumentException("Capacity must be positive");
+        }
+        if (available < 0 || available > capacity) {
+            throw new IllegalArgumentException("Available must be between 0 and capacity");
+        }
+        this.available = available;
+    }
+
     public void reserve(TicketQuantity quantity) {
         if (quantity.value() > available) {
             throw new SoldOutException("Not enough tickets available");

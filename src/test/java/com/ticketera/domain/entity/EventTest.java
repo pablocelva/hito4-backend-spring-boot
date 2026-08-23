@@ -70,4 +70,16 @@ public class EventTest {
         Event event = newEvent();
         assertThrows(InvalidOrderException.class, () -> event.reserveTickets(new TicketQuantity(0)));
     }
+
+    @Test
+    @DisplayName("Reconstitutes event preserving availability")
+    void reconstitutesEventPreservingAvailability() {
+        Event event = Event.reconstitute(new EventId("evt-1"), "Jazz Night", "Teatro", 100, 30);
+
+        assertEquals(30, event.getAvailableTickets());
+        assertEquals(70, event.getTicketSold());
+
+        event.reserveTickets(new TicketQuantity(10));
+        assertEquals(20, event.getAvailableTickets());
+    }
 }

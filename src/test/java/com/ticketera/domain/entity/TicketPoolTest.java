@@ -47,4 +47,32 @@ public class TicketPoolTest {
         pool.reserve(new TicketQuantity(1));
         assertFalse(pool.hasAvailability());
     }
+
+    @Test
+    @DisplayName("Reconstitutes pool preserving available tickets")
+    void reconstitutesPoolPreservingAvailableTickets() {
+        TicketPool pool = new TicketPool(100, 30);
+
+        assertEquals(30, pool.getAvailable());
+        assertTrue(pool.hasAvailability());
+    }
+
+    @Test
+    @DisplayName("Rejects available greater than capacity on reconstitution")
+    void rejectsAvailableGreaterThanCapacity() {
+        assertThrows(IllegalArgumentException.class, () -> new TicketPool(100, 150));
+    }
+
+    @Test
+    @DisplayName("Rejects negative available on reconstitution")
+    void rejectsNegativeAvailable() {
+        assertThrows(IllegalArgumentException.class, () -> new TicketPool(100, -1));
+    }
+
+    @Test
+    @DisplayName("Rejects non-positive capacity on reconstitution")
+    void rejectsNonPositiveCapacityOnReconstitution() {
+        assertThrows(IllegalArgumentException.class, () -> new TicketPool(0, 5));
+        assertThrows(IllegalArgumentException.class, () -> new TicketPool(-10, 5));
+    }
 }

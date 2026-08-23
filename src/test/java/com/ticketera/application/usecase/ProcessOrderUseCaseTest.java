@@ -1,10 +1,10 @@
 package com.ticketera.application.usecase;
 
-import com.ticketera.application.port.MessageNotifier ;
+import com.ticketera.application.port.MessageNotifier;
 import com.ticketera.domain.entity.Event;
-import com.ticketera.domain.exception.InvalidOrderException;
+import com.ticketera.domain.exception.EventNotFoundException;
 import com.ticketera.domain.repository.EventRepository;
-import com.ticketera.domain.valueobject.EventId;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -13,62 +13,62 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@DisplayName("Process Order Use Case")
-public class ProcessOrderUseCaseTest {
-    @Test
-    @DisplayName("Should fail when eventId is null")
-    public void shouldFailWhenEventIdIsNull() {
-        EventRepository repositoryMock = mock(EventRepository.class);
-        MessageNotifier  notifierMock = mock(MessageNotifier .class);
-        ProcessOrderUseCase useCase = new ProcessOrderUseCase(repositoryMock, notifierMock);
+class ProcessOrderUseCaseTest {
 
+    private EventRepository repository;
+    private MessageNotifier notifier;
+    private ProcessOrderUseCase useCase;
+    private Event event;
+
+    @BeforeEach
+    void setUp() {
+        repository = mock(EventRepository.class);
+        notifier = mock(MessageNotifier.class);
+        useCase = new ProcessOrderUseCase(repository, notifier);
+        event = Event.reconstitute(
+            new com.ticketera.domain.valueobject.EventId("evt-001"),
+            "Jazz Night", "Gran Teatro", 500, 500);
+        when(repository.findById(new com.ticketera.domain.valueobject.EventId("evt-001")))
+            .thenReturn(Optional.of(event));
+    }
+
+    @Test
+    @DisplayName("Throws when event id is null")
+    void throwsWhenEventIdIsNull() {
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(null, 2));
     }
 
     @Test
-    @DisplayName("Should fail when eventId is empty")
-    public void shouldFailWhenEventIdIsEmpty() {
-        EventRepository repositoryMock = mock(EventRepository.class);
-        MessageNotifier  notifierMock = mock(MessageNotifier .class);
-        ProcessOrderUseCase useCase = new ProcessOrderUseCase(repositoryMock, notifierMock);
-
+    @DisplayName("Throws when event id is empty")
+    void throwsWhenEventIdIsEmpty() {
         assertThrows(IllegalArgumentException.class, () -> useCase.execute("", 2));
     }
 
     @Test
-    @DisplayName("Should fail when quantity is not positive")
-    public void shouldFailWhenQuantityIsNotPositive() {
-        EventRepository repositoryMock = mock(EventRepository.class);
-        MessageNotifier  notifierMock = mock(MessageNotifier .class);
-        ProcessOrderUseCase useCase = new ProcessOrderUseCase(repositoryMock, notifierMock);
-
-        assertThrows(InvalidOrderException.class, () -> useCase.execute("EVT-001", 0));
+    @DisplayName("Throws when quantity is zero")
+    void throwsWhenQuantityIsZero() {
+        assertThrows(com.ticketera.domain.exception.InvalidOrderException.class,
+            () -> useCase.execute("evt-001", 0));
     }
 
     @Test
-    @DisplayName("Should fail when event not found")
-    public void shouldFailWhenEventNotFound() {
-        EventRepository repositoryMock = mock(EventRepository.class);
-        MessageNotifier  notifierMock = mock(MessageNotifier .class);
-        ProcessOrderUseCase useCase = new ProcessOrderUseCase(repositoryMock, notifierMock);
-        when(repositoryMock.findById(any(EventId.class))).thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class, () -> useCase.execute("EVT-999", 2));
+    @DisplayName("Throws EventNotFoundException when event does not exist")
+    void throwsEventNotFoundWhenEventDoesNotExist() {
+        when(repository.findById(any())).thenReturn(Optional.empty());
+        assertThrows(EventNotFoundException.class, () -> useCase.execute("missing", 2));
+        verify(repository, never()).save(any());
     }
 
     @Test
-    @DisplayName("Should process order and reserve tickets successfully")
-    public void shouldProcessOrderSuccessfully() {
-        EventRepository repositoryMock = mock(EventRepository.class);
-        MessageNotifier  notifierMock = mock(MessageNotifier .class);
-        ProcessOrderUseCase useCase = new ProcessOrderUseCase(repositoryMock, notifierMock);
-        Event event = new Event(new EventId("EVT-001"), "Jazz Night", "Jazz Club", 500);
-        when(repositoryMock.findById(new EventId("EVT-001"))).thenReturn(Optional.of(event));
+    @DisplayName("Reserves tickets, persists and returns confirmation")
+    void reservesTicketsPersistsAndReturnsConfirmation() {
+        OrderResult result = useCase.execute("evt-001", 2);
 
-        useCase.execute("EVT-001", 2);
-
-        verify(notifierMock, times(1)).send("admin@ticketera.com",
-                "Order processed for: Jazz Night (2 tickets), with ID: EVT-001");
-        assertEquals(498, event.getAvailableTickets());
+        assertEquals("evt-001", result.eventId());
+        assertEquals("Jazz Night", result.eventName());
+        assertEquals(2, result.ticketsPurchased());
+        assertEquals(498, result.remainingTickets());
+        verify(repository).save(event);
+        verify(notifier).send(eq("admin@ticketera.com"), contains("Jazz Night"));
     }
 }
