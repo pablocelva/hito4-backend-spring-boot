@@ -1,0 +1,29 @@
+meta {
+  name: 06 - Compra inválida
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/v1/orders
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "eventId": "evt-jazz-001",
+    "quantity": 0
+  }
+}
+
+script:post-response {
+  test("Cantidad inválida responde 400", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("JSON de error unificado", function() {
+    expect(res.getBody().code).to.equal(400);
+    expect(res.getBody().timestamp).to.exist;
+  });
+}

@@ -72,4 +72,7 @@ bin/
 ehthumbs.db
 Thumbs.db
 
+#node
+node_modules
+
 docs/

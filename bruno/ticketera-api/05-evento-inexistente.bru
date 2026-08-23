@@ -1,0 +1,30 @@
+meta {
+  name: 05 - Evento inexistente
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/orders
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "eventId": "no-existe",
+    "quantity": 2,
+    "customerEmail": "customer@email.com"
+  }
+}
+
+script:post-response {
+  test("Evento inexistente responde 404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("JSON de error unificado", function() {
+    expect(res.getBody().code).to.equal(404);
+    expect(res.getBody().timestamp).to.exist;
+  });
+}

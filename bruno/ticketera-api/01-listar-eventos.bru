@@ -1,0 +1,21 @@
+meta {
+  name: 01 - Listar eventos
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/events
+  body: none
+  auth: none
+}
+
+script:post-response {
+  test("La cartelera responde 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Retorna un array JSON", function() {
+    expect(Array.isArray(res.getBody())).to.equal(true);
+  });
+}

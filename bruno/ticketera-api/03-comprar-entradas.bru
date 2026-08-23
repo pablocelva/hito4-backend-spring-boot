@@ -1,0 +1,29 @@
+meta {
+  name: 03 - Comprar entradas
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/orders
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "eventId": "evt-jazz-001",
+    "quantity": 2,
+    "customerEmail": "customer@email.com"
+  }
+}
+
+script:post-response {
+  test("Compra exitosa responde 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("Descuenta del inventario", function() {
+    expect(res.getBody().remainingTickets).to.equal(498);
+  });
+}

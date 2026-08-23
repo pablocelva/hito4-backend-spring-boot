@@ -1,8 +1,18 @@
 # Ticketera - Microservicio de Venta de Entradas (Hito 4)
 
+![Java 17](https://img.shields.io/badge/Java-17-orange?logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.7-6DB33F?logo=spring&logoColor=white)
+![Maven](https://img.shields.io/badge/Maven-Build-C71A36?logo=apachemaven&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![Swagger](https://img.shields.io/badge/OpenAPI-Swagger%20UI-85EA2D?logo=swagger&logoColor=black)
+![JUnit](https://img.shields.io/badge/JUnit%205%20%2B%20Mockito-60%20tests-25A162?logo=junit5&logoColor=white)
+![Coverage](https://img.shields.io/badge/cobertura-100%25-brightgreen)
+![Bruno](https://img.shields.io/badge/contratos-Bruno%206%2F6-F6B93B)
+
 Ticketera es un sistema de venta de entradas para eventos independientes. Este repositorio evoluciona el **Core de Dominio Puro** construido en el Hito 3 hacia un **microservicio con Spring Boot, PostgreSQL y Docker**, manteniendo el núcleo (`domain` y `application`) completamente aislado de frameworks, siguiendo los principios de **Clean Architecture**, **Domain-Driven Design (DDD)** y **Hexagonal Architecture (Ports & Adapters)**.
 
-**Estado del Hito 4:** migración a Spring Boot, adaptador de persistencia JPA/PostgreSQL, capa web REST con manejo global de errores, configuración por perfiles (dev/prod) con Swagger aislado y Docker Compose con PostgreSQL, **completados**. Fase restante: colección de pruebas de contrato con Bruno.
+**Estado del Hito 4:** migración a Spring Boot, adaptador de persistencia JPA/PostgreSQL, capa web REST con manejo global de errores, configuración por perfiles (dev/prod) con Swagger aislado, Docker Compose con PostgreSQL y colección de pruebas de contrato con Bruno — **todas las fases completadas** (colección Bruno: 6/6 requests en verde).
 
 Repositorios que sirven de base a este proyecto:
 
@@ -382,6 +392,53 @@ mvn spring-boot:run "-Dspring-boot.run.profiles=prod"
 | `/swagger-ui.html` | Bloqueada (error; sin consola interactiva) |
 | `/v3/api-docs` | Bloqueada (sin especificación expuesta) |
 
+## Pruebas de contrato (Bruno)
+
+La colección [`bruno/ticketera-api`](bruno/ticketera-api) verifica los contratos HTTP contra el microservicio levantado, con persistencia real incluida: códigos de estado, estructura del JSON unificado de errores y efecto sobre el inventario en PostgreSQL.
+
+| # | Request | Verifica |
+|---|---|---|
+| 01 | `GET /api/v1/events` | 200 y cuerpo tipo array |
+| 02 | `POST /api/v1/events` | 201 con el evento creado y su stock completo |
+| 03 | `POST /api/v1/orders` (2 entradas, Jazz Night) | 201 e inventario descontado (500 → 498) |
+| 04 | `POST /api/v1/orders` (cantidad mayor al stock) | 422 con JSON unificado |
+| 05 | `POST /api/v1/orders` (`eventId` inexistente) | 404 con JSON unificado |
+| 06 | `POST /api/v1/orders` (`quantity: 0`) | 400 por validación perimetral |
+
+### Ejecución de la colección
+
+Requisitos previos: base de datos levantada (`docker compose up -d`) y microservicio corriendo en perfil dev.
+
+**CLI (recomendada):** requiere Node.js. Instalar el cliente una única vez:
+
+```bash
+pnpm install -g @usebruno/cli
+```
+
+Ejecutar la colección completa:
+
+```bash
+cd bruno/ticketera-api
+bru run --env local
+```
+
+> El flag `--env local` es **obligatorio** en la CLI: a diferencia de la GUI, no carga ningún entorno por defecto y sin él las variables como `{{baseUrl}}` no se resuelven.
+
+Salida esperada:
+
+```text
+Execution Summary
+Status      PASS
+Requests    6 (6 Passed)
+Tests       12 verdes (marcados con check por request)
+```
+
+El comando finaliza con código distinto de 0 si algún test falla, lo que lo hace apto para integración continua.
+
+**GUI:** instalar Bruno desde [usebruno.com](https://www.usebruno.com), *Open Collection* → seleccionar `bruno/ticketera-api`, elegir el entorno `local` en el dropdown y ejecutar los requests individualmente o desde el Runner.
+
+> **Colección stateful:** la aserción del request 03 asume que Jazz Night inicia con 500 entradas disponibles. Para una corrida limpia, resetear primero el entorno: `docker compose down -v` seguido de `docker compose up -d`, reiniciar el microservicio para que `DevDataSeeder` re-siembre los datos y ejecutar la colección una sola vez.
+
 ## Tecnologías y dependencias
 
 ### Lenguaje y plataforma
@@ -425,7 +482,7 @@ mvn spring-boot:run "-Dspring-boot.run.profiles=prod"
 
 ## Testing y Garantía de Calidad
 
-Este proyecto utiliza **JUnit 5** y **Mockito** (gestionados por el BOM de Spring Boot) para asegurar los más altos estándares de calidad. La suite combina dos niveles: **tests unitarios puros** sobre `domain` y `application` (sin contexto de Spring ni base de datos, rápidos y deterministas) y **tests de corte web** con `@WebMvcTest` + MockMvc que verifican controladores, validación y el `GlobalExceptionHandler` mockeando los casos de uso. Las pruebas end-to-end sobre persistencia real se cubrirán con la colección Bruno en las siguientes fases.
+Este proyecto utiliza **JUnit 5** y **Mockito** (gestionados por el BOM de Spring Boot) para asegurar los más altos estándares de calidad. La suite combina dos niveles: **tests unitarios puros** sobre `domain` y `application` (sin contexto de Spring ni base de datos, rápidos y deterministas) y **tests de corte web** con `@WebMvcTest` + MockMvc que verifican controladores, validación y el `GlobalExceptionHandler` mockeando los casos de uso. La verificación end-to-end sobre persistencia y red reales se realiza con la colección de contratos Bruno (ver [Pruebas de contrato](#pruebas-de-contrato-bruno)).
 
 - **Patrón AAA Estricto**: Todos los tests están estructurados rigurosamente usando las fases Arrange, Act y Assert.
 - **Excepciones de Negocio**: Las excepciones personalizadas se verifican exhaustivamente usando `assertThrows`.

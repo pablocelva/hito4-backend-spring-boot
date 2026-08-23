@@ -1,0 +1,29 @@
+meta {
+  name: 04 - Compra sin stock
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/orders
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "eventId": "evt-jazz-001",
+    "quantity": 99999
+  }
+}
+
+script:post-response {
+  test("Sin stock responde 422", function() {
+    expect(res.getStatus()).to.equal(422);
+  });
+
+  test("JSON de error unificado", function() {
+    expect(res.getBody().code).to.equal(422);
+    expect(res.getBody().timestamp).to.exist;
+  });
+}
