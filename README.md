@@ -2,7 +2,7 @@
 
 Ticketera es un sistema de venta de entradas para eventos independientes. Este repositorio evoluciona el **Core de Dominio Puro** construido en el Hito 3 hacia un **microservicio con Spring Boot, PostgreSQL y Docker**, manteniendo el núcleo (`domain` y `application`) completamente aislado de frameworks, siguiendo los principios de **Clean Architecture**, **Domain-Driven Design (DDD)** y **Hexagonal Architecture (Ports & Adapters)**.
 
-**Estado del Hito 4:** migración a Spring Boot y adaptador de persistencia JPA/PostgreSQL completados. Próximas fases: configuración por perfiles, capa web REST con manejo global de errores, Swagger/OpenAPI y Docker Compose.
+**Estado del Hito 4:** migración a Spring Boot, adaptador de persistencia JPA/PostgreSQL y capa web REST con manejo global de errores completados. Próximas fases: configuración por perfiles con Swagger/OpenAPI, Docker Compose con PostgreSQL y colección de pruebas Bruno.
 
 Repositorios que sirven de base a este proyecto:
 
@@ -17,6 +17,7 @@ Repositorios que sirven de base a este proyecto:
   - [Nota sobre la arquitectura](#nota-sobre-la-arquitectura)
 - [Lenguaje Ubicuo](#lenguaje-ubicuo)
 - [Contexto Delimitado](#contexto-delimitado)
+- [API REST](#api-rest)
 - [Tecnologías y dependencias](#tecnologías-y-dependencias)
   - [Lenguaje y plataforma](#lenguaje-y-plataforma)
   - [Build](#build)
@@ -36,7 +37,7 @@ El proyecto está organizado en capas según Clean Architecture, con dependencia
 
 - **`domain`**: el corazón del sistema. Entidades (Aggregate Roots), Value Objects, excepciones de negocio y contratos (interfaces de repositorio y servicios). Sin dependencias de producción.
 - **`application`**: casos de uso que orquestan las reglas del dominio. Dependen únicamente de contratos de `domain`.
-- **`infrastructure`**: adaptadores que implementan los contratos del dominio (persistencia JPA/PostgreSQL y notificación por email). Aislada del dominio y **excluida del reporte de cobertura**.
+- **`infrastructure`**: adaptadores que implementan los contratos del dominio (persistencia JPA/PostgreSQL, notificación por email) y exponen la interfaz de red (controladores REST, DTOs y manejo global de errores). Aislada del dominio y **excluida del reporte de cobertura**.
 
 Las interacciones externas se modelan como interfaces inyectadas por constructor, de modo que la capa de dominio nunca depende de una implementación concreta.
 
@@ -79,10 +80,20 @@ hito4-backend-spring-boot/
     │   └── infrastructure/
     │       ├── notification/
     │       │   └── EmailNotificationService.java
-    │       └── persistence/
-    │           ├── EventEntity.java
-    │           ├── EventJpaRepository.java
-    │           └── JpaEventRepository.java
+    │       ├── persistence/
+    │       │   ├── EventEntity.java
+    │       │   ├── EventJpaRepository.java
+    │       │   └── JpaEventRepository.java
+    │       └── web/
+    │           ├── dto/
+    │           │   ├── CreateEventRequest.java
+    │           │   ├── ErrorResponse.java
+    │           │   ├── EventResponse.java
+    │           │   ├── OrderResponse.java
+    │           │   └── TicketOrderRequest.java
+    │           ├── EventController.java
+    │           ├── GlobalExceptionHandler.java
+    │           └── TicketOrderController.java
     └── test/java/com/ticketera/
         ├── application/usecase/
         │   ├── CreateEventUseCaseTest.java
@@ -100,6 +111,9 @@ hito4-backend-spring-boot/
         │       ├── EventIdTest.java
         │       ├── MoneyTest.java
         │       └── TicketQuantityTest.java
+        └── infrastructure/web/
+            ├── EventControllerTest.java
+            └── TicketOrderControllerTest.java
 ```
 
 ### Descripción de archivos
@@ -159,6 +173,24 @@ hito4-backend-spring-boot/
 | `InvalidOrderException.java` | Se lanza cuando una orden tiene datos inválidos (cantidad o precio ≤ 0). |
 | `InvalidEmailException.java` | Se lanza cuando un email no es válido. |
 
+**Capa Web REST (controladores y manejo de errores):**
+
+| Archivo | Responsabilidad |
+|---|---|
+| `EventController.java` | `@RestController` de la cartelera: `GET /api/v1/events`, `GET /api/v1/events/{id}` y `POST /api/v1/events`. Valida la entrada con `@Valid` y delega en `GetEventsUseCase`, `GetEventDetailsUseCase` y `CreateEventUseCase`. |
+| `TicketOrderController.java` | `@RestController` de compras: `POST /api/v1/orders`. Ejecuta `ProcessOrderUseCase` y, si se proporciona email, dispara `SendBookingConfirmationUseCase`. Retorna 201 con el detalle de la compra. |
+| `GlobalExceptionHandler.java` | `@RestControllerAdvice` que centraliza el mapeo de excepciones de negocio y validación a respuestas JSON unificadas (`ErrorResponse`), sin exponer stacktraces. |
+
+**DTOs de la capa web (records):**
+
+| Archivo | Responsabilidad |
+|---|---|
+| `CreateEventRequest.java` | Petición de creación de evento con validaciones `@NotBlank`/`@Positive`. |
+| `TicketOrderRequest.java` | Petición de compra (`eventId`, `quantity`, `customerEmail` opcional con `@Email`). |
+| `EventResponse.java` | Respuesta de cartelera/detalle con `availableTickets` y `ticketsSold`. Se construye con `fromDomain(Event)`. |
+| `OrderResponse.java` | Confirmación de compra construida desde `OrderResult`. |
+| `ErrorResponse.java` | JSON unificado de errores (`code`, `message`, `timestamp`) con fábrica estática `of(...)`. |
+
 **Infraestructura (excluida de cobertura):**
 
 | Archivo | Responsabilidad |
@@ -214,6 +246,39 @@ Glosario compartido entre el equipo de negocio y el equipo técnico. Cada térmi
 
 **Ticketing** es el único contexto delimitado de este sistema. Su frontera cubre el catálogo de eventos, el inventario de entradas, la solicitud de órdenes y la confirmación de reservas. Conceptos como el procesamiento de pagos (facturación) o el control de acceso físico quedan excluidos de forma intencional y pertenecerían a contextos separados en un sistema de mayor escala.
 
+## API REST
+
+La capa web expone rutas semánticas bajo `/api/v1` con los verbos HTTP correspondientes. Los controladores son delgados: validan la entrada de forma perimetral con Jakarta Bean Validation y delegan la lógica en los casos de uso; nunca acceden al dominio directamente.
+
+| Método | Ruta | Descripción | Éxito | Errores |
+|---|---|---|---|---|
+| `GET` | `/api/v1/events` | Cartelera completa | 200 | — |
+| `GET` | `/api/v1/events/{id}` | Detalle de un evento | 200 | 404 |
+| `POST` | `/api/v1/events` | Crea un evento (body: `name`, `venue`, `capacity`) | 201 | 400 |
+| `POST` | `/api/v1/orders` | Compra entradas (body: `eventId`, `quantity`, `customerEmail?`) y confirma la reserva por email si se indica | 201 | 400, 404, 422 |
+
+### Manejo global de errores
+
+Un único `@RestControllerAdvice` captura las excepciones de negocio y de validación, devolviendo siempre el mismo JSON unificado (`ErrorResponse`: `code`, `message`, `timestamp`):
+
+| Excepción | HTTP | Escenario |
+|---|---|---|
+| `MethodArgumentNotValidException` | 400 | Cuerpo inválido (campos vacíos, cantidad ≤ 0, email mal formado) |
+| `InvalidOrderException` / `InvalidEmailException` / `IllegalArgumentException` | 400 | Los Value Objects del dominio rechazan los datos |
+| `EventNotFoundException` | 404 | El evento solicitado no existe |
+| `SoldOutException` | 422 | No hay entradas suficientes (regla de negocio) |
+| `Exception` | 500 | Error inesperado (mensaje genérico, sin filtrar stacktrace) |
+
+Ejemplo de respuesta de error:
+
+```json
+{
+  "code": 422,
+  "message": "Not enough tickets available",
+  "timestamp": "2026-08-23T15:30:00.000000"
+}
+```
+
 ## Tecnologías y dependencias
 
 ### Lenguaje y plataforma
@@ -253,7 +318,7 @@ Glosario compartido entre el equipo de negocio y el equipo técnico. Cada térmi
 
 ## Testing y Garantía de Calidad
 
-Este proyecto utiliza **JUnit 5** y **Mockito** (gestionados por el BOM de Spring Boot) para asegurar los más altos estándares de calidad. La suite se mantiene como **tests unitarios puros**: no levanta contexto de Spring ni requiere base de datos, lo que la hace rápida y determinista; las pruebas de integración (controladores, persistencia real) se incorporan en las siguientes fases del hito.
+Este proyecto utiliza **JUnit 5** y **Mockito** (gestionados por el BOM de Spring Boot) para asegurar los más altos estándares de calidad. La suite combina dos niveles: **tests unitarios puros** sobre `domain` y `application` (sin contexto de Spring ni base de datos, rápidos y deterministas) y **tests de corte web** con `@WebMvcTest` + MockMvc que verifican controladores, validación y el `GlobalExceptionHandler` mockeando los casos de uso. Las pruebas end-to-end sobre persistencia real se cubrirán con la colección Bruno en las siguientes fases.
 
 - **Patrón AAA Estricto**: Todos los tests están estructurados rigurosamente usando las fases Arrange, Act y Assert.
 - **Excepciones de Negocio**: Las excepciones personalizadas se verifican exhaustivamente usando `assertThrows`.
@@ -275,7 +340,9 @@ Este proyecto utiliza **JUnit 5** y **Mockito** (gestionados por el BOM de Sprin
 | `CreateEventUseCase` | 2 | Creación válida (id generado + persistencia), validación delegada al dominio |
 | `GetEventDetailsUseCase` | 2 | Evento encontrado, `EventNotFoundException` cuando no existe |
 | `GetEventsUseCase` | 1 | Retorna la cartelera completa desde el repositorio |
-| **Total** | **51 tests** | **100% de líneas, ramas y métodos** sobre las 17 clases concretas |
+| `EventControllerTest` | 5 | Corte web: listado, detalle, 404, creación 201 y validación 400 (excluido del reporte de cobertura) |
+| `TicketOrderControllerTest` | 4 | Corte web: compra 201, email opcional, sold out 422 y validación 400 (excluido del reporte de cobertura) |
+| **Total** | **60 tests (51 unitarios + 9 de corte web)** | **100% de líneas, ramas y métodos** sobre las 17 clases concretas |
 
 ¹ El contador de clases del console-reporter reporta 17/18 porque incluye la interfaz `MessageNotifier` (contrato sin código ejecutable); los contratos de `domain/repository` quedan excluidos por configuración.
 
