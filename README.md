@@ -45,6 +45,7 @@ hito4-backend-spring-boot/
 ├── README.md
 └── src/
     ├── main/java/com/ticketera/
+    │   ├── TicketeraApplication.java
     │   ├── application/
     │   │   ├── port/
     │   │   │   └── MessageNotifier.java
