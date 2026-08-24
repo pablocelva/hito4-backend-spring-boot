@@ -267,6 +267,19 @@ El proyecto de ejemplo del profesor utiliza un enfoque más "service-oriented" d
 
 Ambos enfoques son válidos y cumplen con la rúbrica del Hito 3. La diferencia es de **dónde se pone la lógica**, no de si está desacoplada.
 
+## Modelo de datos
+
+```mermaid
+erDiagram
+    EVENTS {
+        varchar id PK "UUID del evento"
+        varchar name "Nombre"
+        varchar venue "Lugar"
+        int capacity "Capacidad total"
+        int available_tickets "Disponibles"
+    }
+```
+
 ## Lenguaje Ubicuo
 
 Glosario compartido entre el equipo de negocio y el equipo técnico. Cada término de esta lista se usa de forma idéntica en el código, los tests y la documentación.

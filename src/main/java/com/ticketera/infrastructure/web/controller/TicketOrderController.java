@@ -1,4 +1,4 @@
-package com.ticketera.infrastructure.web;
+package com.ticketera.infrastructure.web.controller;
 
 import com.ticketera.application.usecase.ProcessOrderUseCase;
 import com.ticketera.application.usecase.SendBookingConfirmationUseCase;
