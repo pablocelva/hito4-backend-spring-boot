@@ -6,6 +6,12 @@ import com.ticketera.application.usecase.GetEventDetailsUseCase;
 import com.ticketera.application.usecase.GetEventsUseCase;
 import com.ticketera.application.usecase.ProcessOrderUseCase;
 import com.ticketera.application.usecase.SendBookingConfirmationUseCase;
+import com.ticketera.application.usecase.CreateCityUseCase;
+import com.ticketera.application.usecase.DeleteCityUseCase;
+import com.ticketera.application.usecase.GetCitiesUseCase;
+import com.ticketera.application.usecase.GetCityDetailsUseCase;
+import com.ticketera.application.usecase.UpdateCityUseCase;
+import com.ticketera.domain.repository.CityRepository;
 
 import com.ticketera.domain.repository.EventRepository;
 import org.springframework.context.annotation.Bean;
@@ -37,5 +43,30 @@ public class ApplicationConfig {
     @Bean
     public SendBookingConfirmationUseCase sendBookingConfirmationUseCase(MessageNotifier notifier) {
         return new SendBookingConfirmationUseCase(notifier);
+    }
+    
+    @Bean
+    public CreateCityUseCase createCityUseCase(CityRepository repository) {
+        return new CreateCityUseCase(repository);
+    }
+
+    @Bean
+    public GetCitiesUseCase getCitiesUseCase(CityRepository repository) {
+        return new GetCitiesUseCase(repository);
+    }
+
+    @Bean
+    public GetCityDetailsUseCase getCityDetailsUseCase(CityRepository repository) {
+        return new GetCityDetailsUseCase(repository);
+    }
+
+    @Bean
+    public UpdateCityUseCase updateCityUseCase(CityRepository repository) {
+        return new UpdateCityUseCase(repository);
+    }
+
+    @Bean
+    public DeleteCityUseCase deleteCityUseCase(CityRepository repository) {
+        return new DeleteCityUseCase(repository);
     }
 }

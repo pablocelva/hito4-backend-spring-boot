@@ -4,6 +4,7 @@ import com.ticketera.domain.exception.EventNotFoundException;
 import com.ticketera.domain.exception.InvalidEmailException;
 import com.ticketera.domain.exception.InvalidOrderException;
 import com.ticketera.domain.exception.SoldOutException;
+import com.ticketera.domain.exception.CityNotFoundException;
 import com.ticketera.infrastructure.web.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(EventNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleEventNotFound(EventNotFoundException ex) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(CityNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCityNotFound(CityNotFoundException ex) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
