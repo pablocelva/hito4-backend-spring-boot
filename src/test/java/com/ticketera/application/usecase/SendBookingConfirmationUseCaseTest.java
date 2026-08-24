@@ -6,7 +6,7 @@ import com.ticketera.domain.exception.InvalidEmailException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @DisplayName("Send Booking Confirmation Use Case")
@@ -17,7 +17,9 @@ public class SendBookingConfirmationUseCaseTest {
         MessageNotifier notifierMock = mock(MessageNotifier.class);
         SendBookingConfirmationUseCase useCase = new SendBookingConfirmationUseCase(notifierMock);
 
-        assertThrows(InvalidEmailException.class, () -> useCase.execute(null, "Jazz Night"));
+        InvalidEmailException ex = assertThrows(InvalidEmailException.class,
+            () -> useCase.execute(null, "Jazz Night"));
+        assertEquals("Invalid email: null", ex.getMessage());
     }
 
     @Test
@@ -26,7 +28,9 @@ public class SendBookingConfirmationUseCaseTest {
         MessageNotifier notifierMock = mock(MessageNotifier.class);
         SendBookingConfirmationUseCase useCase = new SendBookingConfirmationUseCase(notifierMock);
 
-        assertThrows(InvalidEmailException.class, () -> useCase.execute("", "Jazz Night"));
+        InvalidEmailException ex = assertThrows(InvalidEmailException.class,
+            () -> useCase.execute("", "Jazz Night"));
+        assertTrue(ex.getMessage().contains("Invalid email:"));
     }
 
     @Test

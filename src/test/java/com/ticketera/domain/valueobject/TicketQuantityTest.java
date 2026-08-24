@@ -21,6 +21,7 @@ public class TicketQuantityTest {
     @ValueSource(ints = {0, -1, -10})
     @DisplayName("Should throw InvalidOrderException when quantity is less than or equal to zero")
     public void shouldThrowWhenQuantityIsNotPositive(int invalid) {
-        assertThrows(InvalidOrderException.class, () -> new TicketQuantity(invalid));
+        InvalidOrderException ex = assertThrows(InvalidOrderException.class, () -> new TicketQuantity(invalid));
+        assertEquals("Quantity must be positive", ex.getMessage());
     }
 }

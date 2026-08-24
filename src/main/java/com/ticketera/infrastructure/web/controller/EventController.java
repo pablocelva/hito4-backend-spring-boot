@@ -1,10 +1,15 @@
 package com.ticketera.infrastructure.web.controller;
 
 import com.ticketera.application.usecase.CreateEventUseCase;
+import com.ticketera.application.usecase.DeleteEventUseCase;
 import com.ticketera.application.usecase.GetEventDetailsUseCase;
+import com.ticketera.application.usecase.GetEventTicketsUseCase;
 import com.ticketera.application.usecase.GetEventsUseCase;
+import com.ticketera.application.usecase.UpdateEventUseCase;
 import com.ticketera.infrastructure.web.dto.CreateEventRequest;
 import com.ticketera.infrastructure.web.dto.EventResponse;
+import com.ticketera.infrastructure.web.dto.TicketResponseDto;
+import com.ticketera.infrastructure.web.dto.UpdateEventRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -16,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "Events", description = "Cartelera de eventos: consulta, detalle y creacion")
+@Tag(name = "Events", description = "Cartelera de eventos: consulta, detalle, creacion, actualizacion y eliminacion")
 @RestController
 @RequestMapping("/api/v1/events")
 public class EventController {
@@ -24,13 +29,22 @@ public class EventController {
     private final GetEventsUseCase getEventsUseCase;
     private final GetEventDetailsUseCase getEventDetailsUseCase;
     private final CreateEventUseCase createEventUseCase;
+    private final UpdateEventUseCase updateEventUseCase;
+    private final DeleteEventUseCase deleteEventUseCase;
+    private final GetEventTicketsUseCase getEventTicketsUseCase;
 
     public EventController(GetEventsUseCase getEventsUseCase,
                            GetEventDetailsUseCase getEventDetailsUseCase,
-                           CreateEventUseCase createEventUseCase) {
+                           CreateEventUseCase createEventUseCase,
+                           UpdateEventUseCase updateEventUseCase,
+                           DeleteEventUseCase deleteEventUseCase,
+                           GetEventTicketsUseCase getEventTicketsUseCase) {
         this.getEventsUseCase = getEventsUseCase;
         this.getEventDetailsUseCase = getEventDetailsUseCase;
         this.createEventUseCase = createEventUseCase;
+        this.updateEventUseCase = updateEventUseCase;
+        this.deleteEventUseCase = deleteEventUseCase;
+        this.getEventTicketsUseCase = getEventTicketsUseCase;
     }
 
     @Operation(summary = "Listar eventos", description = "Retorna la cartelera completa de eventos")
@@ -61,5 +75,41 @@ public class EventController {
     public ResponseEntity<EventResponse> createEvent(@Valid @RequestBody CreateEventRequest request) {
         var event = createEventUseCase.execute(request.name(), request.venue(), request.capacity());
         return ResponseEntity.status(HttpStatus.CREATED).body(EventResponse.fromDomain(event));
+    }
+
+    @Operation(summary = "Actualizar evento", description = "Actualiza nombre, lugar y capacidad de un evento")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Evento actualizado"),
+        @ApiResponse(responseCode = "404", description = "Evento no existe"),
+        @ApiResponse(responseCode = "400", description = "Payload invalido")
+    })
+    @PutMapping("/{id}")
+    public EventResponse updateEvent(@PathVariable String id, @Valid @RequestBody UpdateEventRequest request) {
+        return EventResponse.fromDomain(
+            updateEventUseCase.execute(id, request.name(), request.venue(), request.capacity()));
+    }
+
+    @Operation(summary = "Eliminar evento", description = "Elimina un evento que no tenga ventas")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Evento eliminado"),
+        @ApiResponse(responseCode = "404", description = "Evento no existe"),
+        @ApiResponse(responseCode = "409", description = "Evento con ventas activas")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEvent(@PathVariable String id) {
+        deleteEventUseCase.execute(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Entradas de un evento", description = "Lista todas las entradas vendidas de un evento")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Lista de entradas"),
+        @ApiResponse(responseCode = "404", description = "Evento no existe")
+    })
+    @GetMapping("/{id}/tickets")
+    public List<TicketResponseDto> getEventTickets(@PathVariable String id) {
+        return getEventTicketsUseCase.execute(id).stream()
+            .map(TicketResponseDto::fromDomain)
+            .toList();
     }
 }

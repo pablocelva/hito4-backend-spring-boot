@@ -4,14 +4,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 
-@Schema(description = "Peticion de creacion de evento")
-public record CreateEventRequest(
+@Schema(description = "Peticion de actualizacion de evento")
+public record UpdateEventRequest(
 
-    @Schema(description = "Codigo de ciudad", example = "LIM")
-    @NotBlank(message = "City id is required")
-    String cityId,
-
-    @Schema(description = "Nombre del evento", example = "Jazz Night")
+    @Schema(description = "Nombre del evento", example = "Jazz Night Updated")
     @NotBlank(message = "Name is required")
     String name,
 
@@ -19,7 +15,7 @@ public record CreateEventRequest(
     @NotBlank(message = "Venue is required")
     String venue,
 
-    @Schema(description = "Capacidad total de entradas", example = "500")
+    @Schema(description = "Capacidad total de entradas", example = "600")
     @Positive(message = "Capacity must be positive")
     int capacity
 ) {

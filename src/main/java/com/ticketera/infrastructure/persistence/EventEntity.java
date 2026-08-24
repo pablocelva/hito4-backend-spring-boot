@@ -15,6 +15,9 @@ public class EventEntity {
     @Column(name = "id", nullable = false, length = 36)
     private String id;
 
+    @Column(name = "city_id", nullable = false, length = 50)
+    private String cityId;
+
     @Column(name = "name", nullable = false)
     private String name;
 
@@ -30,8 +33,9 @@ public class EventEntity {
     protected EventEntity() {
     }
 
-    private EventEntity(String id, String name, String venue, int capacity, int availableTickets) {
+    private EventEntity(String id, String cityId, String name, String venue, int capacity, int availableTickets) {
         this.id = id;
+        this.cityId = cityId;
         this.name = name;
         this.venue = venue;
         this.capacity = capacity;
@@ -41,6 +45,7 @@ public class EventEntity {
     public static EventEntity fromDomain(Event event) {
         return new EventEntity(
             event.getId().value(),
+            event.getCityId().value(),
             event.getName(),
             event.getVenue(),
             event.getCapacity(),
@@ -48,7 +53,10 @@ public class EventEntity {
     }
 
     public Event toDomain() {
-        return Event.reconstitute(new EventId(id), name, venue, capacity, availableTickets);
+        return Event.reconstitute(
+            new EventId(id),
+            new com.ticketera.domain.valueobject.CityId(cityId),
+            name, venue, capacity, availableTickets);
     }
 
     public String getId() {

@@ -17,12 +17,14 @@ public class EventIdTest {
     @Test
     @DisplayName("Should throw IllegalArgumentException when id is null")
     public void shouldThrowWhenNull() {
-        assertThrows(IllegalArgumentException.class, () -> new EventId(null));
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> new EventId(null));
+        assertEquals("Event ID cannot be blank", ex.getMessage());
     }
 
     @Test
     @DisplayName("Should throw IllegalArgumentException when id is blank")
     public void shouldThrowWhenBlank() {
-        assertThrows(IllegalArgumentException.class, () -> new EventId("   "));
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> new EventId("   "));
+        assertEquals("Event ID cannot be blank", ex.getMessage());
     }
 }

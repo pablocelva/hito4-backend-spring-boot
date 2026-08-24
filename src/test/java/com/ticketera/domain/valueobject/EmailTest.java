@@ -18,24 +18,28 @@ public class EmailTest {
     @Test
     @DisplayName("Should throw InvalidEmailException when email is null")
     public void shouldThrowWhenEmailIsNull() {
-        assertThrows(InvalidEmailException.class, () -> new Email(null));
+        InvalidEmailException ex = assertThrows(InvalidEmailException.class, () -> new Email(null));
+        assertEquals("Invalid email: null", ex.getMessage());
     }
 
     @Test
     @DisplayName("Should throw InvalidEmailException when email is blank")
     public void shouldThrowWhenEmailIsBlank() {
-        assertThrows(InvalidEmailException.class, () -> new Email("   "));
+        InvalidEmailException ex = assertThrows(InvalidEmailException.class, () -> new Email("   "));
+        assertTrue(ex.getMessage().contains("Invalid email:"));
     }
 
     @Test
     @DisplayName("Should throw InvalidEmailException when email has no @")
     public void shouldThrowWhenEmailHasNoAtSign() {
-        assertThrows(InvalidEmailException.class, () -> new Email("juan-sin-arroba"));
+        InvalidEmailException ex = assertThrows(InvalidEmailException.class, () -> new Email("juan-sin-arroba"));
+        assertEquals("Invalid email: juan-sin-arroba", ex.getMessage());
     }
 
     @Test
     @DisplayName("Should throw InvalidEmailException when email has no domain")
     public void shouldThrowWhenEmailHasNoDomain() {
-        assertThrows(InvalidEmailException.class, () -> new Email("user@"));
+        InvalidEmailException ex = assertThrows(InvalidEmailException.class, () -> new Email("user@"));
+        assertEquals("Invalid email: user@", ex.getMessage());
     }
 }

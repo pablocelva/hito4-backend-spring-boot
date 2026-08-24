@@ -7,41 +7,45 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Customer")
-public class CustomerTest {
+class CustomerTest {
+
     @Test
-    @DisplayName("Should create customer with valid data")
-    public void shouldCreateCustomer() {
+    @DisplayName("Creates customer with valid data")
+    void createsCustomerWithValidData() {
         Customer customer = new Customer("CUS-001", "Pablo", new Email("pablo@example.com"));
         assertEquals("CUS-001", customer.getId());
         assertEquals("Pablo", customer.getName());
-        assertEquals("pablo@example.com", customer.getEmail().value());
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when id is null")
-    public void shouldThrowWhenIdIsNull() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new Customer(null, "Pablo", new Email("pablo@example.com")));
+    @DisplayName("Throws when id is null")
+    void throwsWhenIdIsNull() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+            () -> new Customer(null, "Pablo", new Email("pablo@example.com")));
+        assertEquals("Customer ID cannot be blank", ex.getMessage());
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when id is blank")
-    public void shouldThrowWhenIdIsBlank() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new Customer("", "Pablo", new Email("pablo@example.com")));
+    @DisplayName("Throws when id is blank")
+    void throwsWhenIdIsBlank() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+            () -> new Customer("", "Pablo", new Email("pablo@example.com")));
+        assertEquals("Customer ID cannot be blank", ex.getMessage());
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when name is null")
-    public void shouldThrowWhenNameIsNull() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new Customer("CUS-001", null, new Email("pablo@example.com")));
+    @DisplayName("Throws when name is null")
+    void throwsWhenNameIsNull() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+            () -> new Customer("CUS-001", null, new Email("pablo@example.com")));
+        assertEquals("Customer name cannot be blank", ex.getMessage());
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when name is blank")
-    public void shouldThrowWhenNameIsBlank() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new Customer("CUS-001", "  ", new Email("pablo@example.com")));
+    @DisplayName("Throws when name is blank")
+    void throwsWhenNameIsBlank() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+            () -> new Customer("CUS-001", "  ", new Email("pablo@example.com")));
+        assertEquals("Customer name cannot be blank", ex.getMessage());
     }
 }

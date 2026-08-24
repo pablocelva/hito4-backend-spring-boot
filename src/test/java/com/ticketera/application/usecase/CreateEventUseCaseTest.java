@@ -37,8 +37,9 @@ class CreateEventUseCaseTest {
     @Test
     @DisplayName("Delegates validation to domain")
     void delegatesValidationToDomain() {
-        assertThrows(IllegalArgumentException.class,
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
             () -> useCase.execute("Jazz Night", "Gran Teatro", 0));
+        assertEquals("Capacity must be positive", ex.getMessage());
         verify(repository, never()).save(any());
     }
 }

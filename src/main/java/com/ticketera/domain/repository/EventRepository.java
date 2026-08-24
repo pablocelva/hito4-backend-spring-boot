@@ -13,4 +13,6 @@ public interface EventRepository {
     List<Event> findAll();
 
     void save(Event event);
+
+    void deleteById(EventId id);
 }

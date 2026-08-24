@@ -39,7 +39,8 @@ public class TicketOrderController {
     })
     @PostMapping
     public ResponseEntity<OrderResponse> purchase(@Valid @RequestBody TicketOrderRequest request) {
-        var result = processOrderUseCase.execute(request.eventId(), request.quantity());
+        var result = processOrderUseCase.execute(
+            request.eventId(), request.quantity(), request.customerName(), request.customerEmail());
 
         if (request.customerEmail() != null && !request.customerEmail().isBlank()) {
             sendBookingConfirmationUseCase.execute(request.customerEmail(), result.eventName());

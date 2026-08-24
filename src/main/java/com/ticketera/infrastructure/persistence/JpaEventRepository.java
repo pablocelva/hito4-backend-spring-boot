@@ -33,4 +33,9 @@ public class JpaEventRepository implements EventRepository {
     public void save(Event event) {
         jpaRepository.save(EventEntity.fromDomain(event));
     }
+
+    @Override
+    public void deleteById(EventId id) {
+        jpaRepository.deleteById(id.value());
+    }
 }

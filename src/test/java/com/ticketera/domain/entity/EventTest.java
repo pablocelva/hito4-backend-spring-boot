@@ -61,14 +61,27 @@ public class EventTest {
     @DisplayName("Should throw SoldOutException when reserving more than available")
     public void shouldThrowSoldOutWhenNotEnoughTickets() {
         Event event = newEvent();
-        assertThrows(SoldOutException.class, () -> event.reserveTickets(new TicketQuantity(600)));
+        SoldOutException ex = assertThrows(SoldOutException.class,
+            () -> event.reserveTickets(new TicketQuantity(600)));
+        assertEquals("Not enough tickets available", ex.getMessage());
     }
 
     @Test
     @DisplayName("Should throw InvalidOrderException when quantity is not positive")
     public void shouldThrowInvalidOrderWhenQuantityIsNotPositive() {
         Event event = newEvent();
-        assertThrows(InvalidOrderException.class, () -> event.reserveTickets(new TicketQuantity(0)));
+        InvalidOrderException ex = assertThrows(InvalidOrderException.class,
+            () -> event.reserveTickets(new TicketQuantity(0)));
+        assertEquals("Quantity must be positive", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should throw InvalidOrderException when quantity is negative")
+    public void shouldThrowInvalidOrderWhenQuantityIsNegative() {
+        Event event = newEvent();
+        InvalidOrderException ex = assertThrows(InvalidOrderException.class,
+            () -> event.reserveTickets(new TicketQuantity(-1)));
+        assertEquals("Quantity must be positive", ex.getMessage());
     }
 
     @Test
@@ -81,5 +94,34 @@ public class EventTest {
 
         event.reserveTickets(new TicketQuantity(10));
         assertEquals(20, event.getAvailableTickets());
+    }
+
+    @Test
+    @DisplayName("Should update event details successfully")
+    void updatesEventDetails() {
+        Event event = newEvent();
+        event.updateDetails("Rock Night", "Estadio", 1000);
+        assertEquals("Rock Night", event.getName());
+        assertEquals("Estadio", event.getVenue());
+        assertEquals(1000, event.getCapacity());
+    }
+
+    @Test
+    @DisplayName("Should throw when capacity is less than sold tickets")
+    void throwsWhenCapacityLessThanSold() {
+        Event event = newEvent();
+        event.reserveTickets(new TicketQuantity(100));
+        InvalidOrderException ex = assertThrows(InvalidOrderException.class,
+            () -> event.updateDetails("Small", "Venue", 50));
+        assertTrue(ex.getMessage().contains("cannot be less than sold tickets"));
+    }
+
+    @Test
+    @DisplayName("Should detect sold tickets")
+    void detectsSoldTickets() {
+        Event event = newEvent();
+        assertFalse(event.hasSoldTickets());
+        event.reserveTickets(new TicketQuantity(1));
+        assertTrue(event.hasSoldTickets());
     }
 }

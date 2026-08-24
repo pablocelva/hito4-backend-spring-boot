@@ -37,6 +37,9 @@ class GetEventDetailsUseCaseTest {
     @DisplayName("Throws EventNotFoundException when missing")
     void throwsEventNotFoundWhenMissing() {
         when(repository.findById(any())).thenReturn(Optional.empty());
-        assertThrows(EventNotFoundException.class, () -> useCase.execute("missing"));
+
+        EventNotFoundException ex = assertThrows(EventNotFoundException.class,
+            () -> useCase.execute("missing"));
+        assertEquals("Event not found: missing", ex.getMessage());
     }
 }

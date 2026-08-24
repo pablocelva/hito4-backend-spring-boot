@@ -21,6 +21,7 @@ public class MoneyTest {
     @ValueSource(doubles = {0.0, -1.0, -100.0})
     @DisplayName("Should throw InvalidOrderException when price is less than or equal to zero")
     public void shouldThrowWhenPriceIsNotPositive(double invalid) {
-        assertThrows(InvalidOrderException.class, () -> new Money(invalid));
+        InvalidOrderException ex = assertThrows(InvalidOrderException.class, () -> new Money(invalid));
+        assertEquals("Price must be positive", ex.getMessage());
     }
 }

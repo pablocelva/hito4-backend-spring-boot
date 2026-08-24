@@ -16,6 +16,9 @@ public record TicketOrderRequest(
     @Positive(message = "Quantity must be positive")
     int quantity,
 
+    @Schema(description = "Nombre del cliente", example = "Juan Perez")
+    String customerName,
+
     @Schema(description = "Email opcional para confirmacion", example = "customer@email.com")
     @Email(message = "Customer email must be valid")
     String customerEmail
