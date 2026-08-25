@@ -48,7 +48,10 @@ public class EventController {
     }
 
     @Operation(summary = "Listar eventos", description = "Retorna la cartelera completa de eventos")
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "Cartelera obtenida"))
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Cartelera obtenida exitosamente"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     @GetMapping
     public List<EventResponse> listEvents() {
         return getEventsUseCase.execute().stream()
@@ -57,19 +60,21 @@ public class EventController {
     }
 
     @Operation(summary = "Detalle de evento", description = "Retorna un evento por su identificador")
-    @ApiResponses({
+    @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Evento encontrado"),
-        @ApiResponse(responseCode = "404", description = "Evento no existe")
+        @ApiResponse(responseCode = "404", description = "Evento no existe"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @GetMapping("/{id}")
-    public EventResponse getEvent(@PathVariable String id) {
+    public EventResponse getEvent(@PathVariable Long id) {
         return EventResponse.fromDomain(getEventDetailsUseCase.execute(id));
     }
 
     @Operation(summary = "Crear evento", description = "Registra un nuevo evento con su capacidad inicial")
-    @ApiResponses({
+    @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Evento creado"),
-        @ApiResponse(responseCode = "400", description = "Payload invalido")
+        @ApiResponse(responseCode = "400", description = "Payload invalido"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @PostMapping
     public ResponseEntity<EventResponse> createEvent(@Valid @RequestBody CreateEventRequest request) {
@@ -78,36 +83,39 @@ public class EventController {
     }
 
     @Operation(summary = "Actualizar evento", description = "Actualiza nombre, lugar y capacidad de un evento")
-    @ApiResponses({
+    @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Evento actualizado"),
         @ApiResponse(responseCode = "404", description = "Evento no existe"),
-        @ApiResponse(responseCode = "400", description = "Payload invalido")
+        @ApiResponse(responseCode = "400", description = "Payload invalido"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @PutMapping("/{id}")
-    public EventResponse updateEvent(@PathVariable String id, @Valid @RequestBody UpdateEventRequest request) {
+    public EventResponse updateEvent(@PathVariable Long id, @Valid @RequestBody UpdateEventRequest request) {
         return EventResponse.fromDomain(
             updateEventUseCase.execute(id, request.name(), request.venue(), request.capacity()));
     }
 
     @Operation(summary = "Eliminar evento", description = "Elimina un evento que no tenga ventas")
-    @ApiResponses({
+    @ApiResponses(value = {
         @ApiResponse(responseCode = "204", description = "Evento eliminado"),
         @ApiResponse(responseCode = "404", description = "Evento no existe"),
-        @ApiResponse(responseCode = "409", description = "Evento con ventas activas")
+        @ApiResponse(responseCode = "409", description = "Evento con ventas activas"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteEvent(@PathVariable String id) {
+    public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
         deleteEventUseCase.execute(id);
         return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Entradas de un evento", description = "Lista todas las entradas vendidas de un evento")
-    @ApiResponses({
+    @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Lista de entradas"),
-        @ApiResponse(responseCode = "404", description = "Evento no existe")
+        @ApiResponse(responseCode = "404", description = "Evento no existe"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @GetMapping("/{id}/tickets")
-    public List<TicketResponseDto> getEventTickets(@PathVariable String id) {
+    public List<TicketResponseDto> getEventTickets(@PathVariable Long id) {
         return getEventTicketsUseCase.execute(id).stream()
             .map(TicketResponseDto::fromDomain)
             .toList();

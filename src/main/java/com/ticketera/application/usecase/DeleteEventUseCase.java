@@ -3,7 +3,6 @@ package com.ticketera.application.usecase;
 import com.ticketera.domain.entity.Event;
 import com.ticketera.domain.exception.InvalidOrderException;
 import com.ticketera.domain.repository.EventRepository;
-import com.ticketera.domain.valueobject.EventId;
 
 public class DeleteEventUseCase {
 
@@ -13,16 +12,15 @@ public class DeleteEventUseCase {
         this.repository = repository;
     }
 
-    public void execute(String eventId) {
-        EventId id = new EventId(eventId);
-        Event event = repository.findById(id)
+    public void execute(Long eventId) {
+        Event event = repository.findById(eventId)
             .orElseThrow(() -> new com.ticketera.domain.exception.EventNotFoundException(
-                "Event not found: " + id.value()));
+                "Event not found: " + eventId));
 
         if (event.hasSoldTickets()) {
             throw new InvalidOrderException("Cannot delete event with sold tickets");
         }
 
-        repository.deleteById(id);
+        repository.deleteById(eventId);
     }
 }

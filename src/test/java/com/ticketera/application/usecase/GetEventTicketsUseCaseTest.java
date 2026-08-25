@@ -2,7 +2,6 @@ package com.ticketera.application.usecase;
 
 import com.ticketera.domain.entity.Ticket;
 import com.ticketera.domain.repository.TicketRepository;
-import com.ticketera.domain.valueobject.EventId;
 import com.ticketera.domain.valueobject.TicketId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,15 +27,15 @@ class GetEventTicketsUseCaseTest {
     @DisplayName("Returns tickets for an event")
     void returnsTicketsForEvent() {
         List<Ticket> expected = List.of(
-            new Ticket(new TicketId("t-1"), new EventId("evt-1"), "Juan", "juan@email.com"),
-            new Ticket(new TicketId("t-2"), new EventId("evt-1"), "Ana", "ana@email.com"));
-        when(ticketRepository.findByEventId(new EventId("evt-1"))).thenReturn(expected);
+            new Ticket(new TicketId("t-1"), 1L, "Juan", "juan@email.com"),
+            new Ticket(new TicketId("t-2"), 1L, "Ana", "ana@email.com"));
+        when(ticketRepository.findByEventId(1L)).thenReturn(expected);
 
-        List<Ticket> result = useCase.execute("evt-1");
+        List<Ticket> result = useCase.execute(1L);
 
         assertEquals(2, result.size());
         assertEquals("Juan", result.get(0).getCustomerName());
-        verify(ticketRepository).findByEventId(new EventId("evt-1"));
+        verify(ticketRepository).findByEventId(1L);
     }
 
     @Test
@@ -44,7 +43,7 @@ class GetEventTicketsUseCaseTest {
     void returnsEmptyListWhenNoTickets() {
         when(ticketRepository.findByEventId(any())).thenReturn(List.of());
 
-        List<Ticket> result = useCase.execute("evt-1");
+        List<Ticket> result = useCase.execute(1L);
 
         assertTrue(result.isEmpty());
     }

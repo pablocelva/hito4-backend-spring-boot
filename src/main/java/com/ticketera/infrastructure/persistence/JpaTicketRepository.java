@@ -2,7 +2,6 @@ package com.ticketera.infrastructure.persistence;
 
 import com.ticketera.domain.entity.Ticket;
 import com.ticketera.domain.repository.TicketRepository;
-import com.ticketera.domain.valueobject.EventId;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,8 +16,8 @@ public class JpaTicketRepository implements TicketRepository {
     }
 
     @Override
-    public List<Ticket> findByEventId(EventId eventId) {
-        return jpaRepository.findByEventId(eventId.value()).stream()
+    public List<Ticket> findByEventId(Long eventId) {
+        return jpaRepository.findByEventId(eventId).stream()
             .map(TicketEntity::toDomain)
             .toList();
     }

@@ -3,7 +3,6 @@ package com.ticketera.application.usecase;
 import com.ticketera.domain.entity.City;
 import com.ticketera.domain.exception.CityNotFoundException;
 import com.ticketera.domain.repository.CityRepository;
-import com.ticketera.domain.valueobject.CityId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,10 +26,10 @@ class UpdateCityUseCaseTest {
     @Test
     @DisplayName("Updates city name successfully")
     void updatesCityNameSuccessfully() {
-        City city = new City(new CityId("LIM"), "Lima");
-        when(repository.findById(any())).thenReturn(Optional.of(city));
+        City city = new City(1L, "LIM", "Lima");
+        when(repository.findById(1L)).thenReturn(Optional.of(city));
 
-        City result = useCase.execute("LIM", "Lima Metropolitana");
+        City result = useCase.execute(1L, "Lima Metropolitana");
 
         assertEquals("Lima Metropolitana", result.getName());
         verify(repository).save(city);
@@ -39,22 +38,22 @@ class UpdateCityUseCaseTest {
     @Test
     @DisplayName("Throws CityNotFoundException when city does not exist")
     void throwsCityNotFoundWhenCityDoesNotExist() {
-        when(repository.findById(any())).thenReturn(Optional.empty());
+        when(repository.findById(999L)).thenReturn(Optional.empty());
 
         CityNotFoundException ex = assertThrows(CityNotFoundException.class,
-            () -> useCase.execute("MISS", "New Name"));
-        assertEquals("City with id 'MISS' not found", ex.getMessage());
+            () -> useCase.execute(999L, "New Name"));
+        assertEquals("City with id '999' not found", ex.getMessage());
         verify(repository, never()).save(any());
     }
 
     @Test
     @DisplayName("Throws when name is blank")
     void throwsWhenNameIsBlank() {
-        City city = new City(new CityId("LIM"), "Lima");
-        when(repository.findById(any())).thenReturn(Optional.of(city));
+        City city = new City(1L, "LIM", "Lima");
+        when(repository.findById(1L)).thenReturn(Optional.of(city));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> useCase.execute("LIM", "  "));
+            () -> useCase.execute(1L, "  "));
         assertEquals("City name is required", ex.getMessage());
         verify(repository, never()).save(any());
     }

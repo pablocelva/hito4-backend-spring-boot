@@ -35,13 +35,13 @@ class TicketOrderControllerTest {
     @Test
     @DisplayName("Purchases tickets and returns 201")
     void purchasesTicketsAndReturns201() throws Exception {
-        when(processOrderUseCase.execute(eq("evt-1"), eq(2), anyString(), anyString()))
+        when(processOrderUseCase.execute(eq(1L), eq(2), anyString(), anyString()))
             .thenReturn(new OrderResult("evt-1", "Jazz Night", 2, 98));
 
         mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"eventId": "evt-1", "quantity": 2, "customerName": "Juan", "customerEmail": "customer@email.com"}
+                    {"eventId": 1, "quantity": 2, "customerName": "Juan", "customerEmail": "customer@email.com"}
                     """))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.eventId").value("evt-1"))
@@ -55,13 +55,13 @@ class TicketOrderControllerTest {
     @Test
     @DisplayName("Purchases without optional email skips confirmation")
     void purchasesWithoutOptionalEmailSkipsConfirmation() throws Exception {
-        when(processOrderUseCase.execute(eq("evt-1"), eq(2), any(), any()))
+        when(processOrderUseCase.execute(eq(1L), eq(2), any(), any()))
             .thenReturn(new OrderResult("evt-1", "Jazz Night", 2, 98));
 
         mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"eventId": "evt-1", "quantity": 2}
+                    {"eventId": 1, "quantity": 2}
                     """))
             .andExpect(status().isCreated());
 
@@ -77,7 +77,7 @@ class TicketOrderControllerTest {
         mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"eventId": "evt-1", "quantity": 600}
+                    {"eventId": 1, "quantity": 600}
                     """))
             .andExpect(status().isUnprocessableEntity())
             .andExpect(jsonPath("$.code").value(422))
@@ -90,7 +90,7 @@ class TicketOrderControllerTest {
         mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"eventId": "", "quantity": 0}
+                    {"eventId": null, "quantity": 0}
                     """))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value(400));

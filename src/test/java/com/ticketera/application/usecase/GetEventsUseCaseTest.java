@@ -27,8 +27,8 @@ class GetEventsUseCaseTest {
     @DisplayName("Returns all events from repository")
     void returnsAllEventsFromRepository() {
         List<Event> expected = List.of(
-            Event.reconstitute(new EventId("evt-1"), "Jazz Night", "Teatro", 100, 90),
-            Event.reconstitute(new EventId("evt-2"), "Rock Fest", "Estadio", 1000, 500));
+            Event.reconstitute(1L, new EventId("evt-1"), "Jazz Night", "Teatro", 100, 90),
+            Event.reconstitute(2L, new EventId("evt-2"), "Rock Fest", "Estadio", 1000, 500));
         when(repository.findAll()).thenReturn(expected);
 
         List<Event> result = useCase.execute();

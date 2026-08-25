@@ -9,6 +9,7 @@ import com.ticketera.application.usecase.GetCityDetailsUseCase;
 import com.ticketera.application.usecase.UpdateCityUseCase;
 import com.ticketera.infrastructure.web.dto.CityRequestDto;
 import com.ticketera.infrastructure.web.dto.CityResponseDto;
+import com.ticketera.infrastructure.web.dto.UpdateCityRequest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -52,46 +53,58 @@ public class CityController {
     }
 
     @Operation(summary = "Listar ciudades")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Lista de ciudades obtenida exitosamente"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     @GetMapping
     public List<CityResponseDto> listCities() {
         return getCitiesUseCase.execute().stream().map(CityResponseDto::fromDomain).toList();
     }
 
-    @Operation(summary = "Obtener ciudad por codigo")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Encontrada"),
-        @ApiResponse(responseCode = "404", description = "No existe")
+    @Operation(summary = "Obtener ciudad por ID")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Ciudad encontrada"),
+        @ApiResponse(responseCode = "404", description = "Ciudad no encontrada"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @GetMapping("/{id}")
-    public CityResponseDto getCity(@PathVariable String id) {
+    public CityResponseDto getCity(@PathVariable Long id) {
         return CityResponseDto.fromDomain(getCityDetailsUseCase.execute(id));
     }
 
     @Operation(summary = "Crear ciudad")
-    @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Creada"),
-        @ApiResponse(responseCode = "400", description = "Payload invalido")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Ciudad creada exitosamente"),
+        @ApiResponse(responseCode = "400", description = "Payload invalido"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @PostMapping
     public ResponseEntity<CityResponseDto> createCity(@Valid @RequestBody CityRequestDto request) {
-        var city = createCityUseCase.execute(request.id(), request.name());
+        var city = createCityUseCase.execute(request.code(), request.name());
         return ResponseEntity.status(HttpStatus.CREATED).body(CityResponseDto.fromDomain(city));
     }
 
-    @Operation(summary = "Actualizar nombre de ciudad")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Actualizada"),
-        @ApiResponse(responseCode = "404", description = "No existe")
+    @Operation(summary = "Actualizar nombre de ciudad", description = "Actualiza el nombre de una ciudad existente. El campo 'code' es inmutable y no puede modificarse; para corregir un codigo, eliminar la ciudad y crear una nueva.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Ciudad actualizada exitosamente"),
+        @ApiResponse(responseCode = "404", description = "Ciudad no encontrada"),
+        @ApiResponse(responseCode = "400", description = "Payload invalido"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @PutMapping("/{id}")
-    public CityResponseDto updateCity(@PathVariable String id, @Valid @RequestBody CityRequestDto request) {
+    public CityResponseDto updateCity(@PathVariable Long id, @Valid @RequestBody UpdateCityRequest request) {
         return CityResponseDto.fromDomain(updateCityUseCase.execute(id, request.name()));
     }
 
     @Operation(summary = "Eliminar ciudad")
-    @ApiResponses(@ApiResponse(responseCode = "204", description = "Eliminada"))
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "Ciudad eliminada exitosamente"),
+        @ApiResponse(responseCode = "404", description = "Ciudad no encontrada"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCity(@PathVariable String id) {
+    public ResponseEntity<Void> deleteCity(@PathVariable Long id) {
         deleteCityUseCase.execute(id);
         return ResponseEntity.noContent().build();
     }

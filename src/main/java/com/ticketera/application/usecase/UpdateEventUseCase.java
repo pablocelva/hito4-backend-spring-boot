@@ -3,7 +3,6 @@ package com.ticketera.application.usecase;
 import com.ticketera.domain.entity.Event;
 import com.ticketera.domain.exception.EventNotFoundException;
 import com.ticketera.domain.repository.EventRepository;
-import com.ticketera.domain.valueobject.EventId;
 
 public class UpdateEventUseCase {
 
@@ -13,10 +12,9 @@ public class UpdateEventUseCase {
         this.repository = repository;
     }
 
-    public Event execute(String eventId, String name, String venue, int capacity) {
-        EventId id = new EventId(eventId);
-        Event event = repository.findById(id)
-            .orElseThrow(() -> new EventNotFoundException("Event not found: " + id.value()));
+    public Event execute(Long eventId, String name, String venue, int capacity) {
+        Event event = repository.findById(eventId)
+            .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventId));
 
         event.updateDetails(name, venue, capacity);
         repository.save(event);

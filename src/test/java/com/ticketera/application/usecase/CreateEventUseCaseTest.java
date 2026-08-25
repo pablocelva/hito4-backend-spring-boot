@@ -22,11 +22,11 @@ class CreateEventUseCaseTest {
     }
 
     @Test
-    @DisplayName("Creates event with generated id and persists it")
-    void createsEventWithGeneratedIdAndPersistsIt() {
+    @DisplayName("Creates event with generated code and persists it")
+    void createsEventWithGeneratedCodeAndPersistsIt() {
         Event result = useCase.execute("Jazz Night", "Gran Teatro", 500);
 
-        assertNotNull(result.getId());
+        assertNotNull(result.getCode());
         assertEquals("Jazz Night", result.getName());
         assertEquals("Gran Teatro", result.getVenue());
         assertEquals(500, result.getCapacity());

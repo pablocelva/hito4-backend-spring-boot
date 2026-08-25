@@ -40,10 +40,10 @@ class JpaEventRepositoryTest {
 
     @Test
     void persistsAndRecoversAggregateWithInventory() {
-        Event event = Event.reconstitute(new EventId("evt-test-1"), "Jazz Night", "Teatro", 100, 90);
+        Event event = Event.reconstitute(null, new EventId("evt-test-1"), "Jazz Night", "Teatro", 100, 90);
 
         repository.save(event);
-        Event recovered = repository.findById(new EventId("evt-test-1")).orElseThrow();
+        Event recovered = repository.findByCode("evt-test-1").orElseThrow();
 
         assertEquals("Jazz Night", recovered.getName());
         assertEquals(100, recovered.getCapacity());
@@ -53,11 +53,11 @@ class JpaEventRepositoryTest {
 
     @Test
     void persistsReservationsMadeOnAggregate() {
-        Event event = Event.reconstitute(new EventId("evt-test-2"), "Rock Fest", "Estadio", 1000, 500);
+        Event event = Event.reconstitute(null, new EventId("evt-test-2"), "Rock Fest", "Estadio", 1000, 500);
 
         event.reserveTickets(new TicketQuantity(200));
         repository.save(event);
-        Event recovered = repository.findById(new EventId("evt-test-2")).orElseThrow();
+        Event recovered = repository.findByCode("evt-test-2").orElseThrow();
 
         assertEquals(300, recovered.getAvailableTickets());
         assertEquals(700, recovered.getTicketSold());
@@ -65,12 +65,12 @@ class JpaEventRepositoryTest {
 
     @Test
     void listsAllPersistedEvents() {
-        repository.save(Event.reconstitute(new EventId("evt-a"), "A", "V1", 10, 10));
-        repository.save(Event.reconstitute(new EventId("evt-b"), "B", "V2", 20, 15));
+        repository.save(Event.reconstitute(null, new EventId("evt-a"), "A", "V1", 10, 10));
+        repository.save(Event.reconstitute(null, new EventId("evt-b"), "B", "V2", 20, 15));
 
         List<Event> all = repository.findAll();
 
         assertEquals(2, all.size());
-        assertTrue(all.stream().anyMatch(e -> e.getId().value().equals("evt-b")));
+        assertTrue(all.stream().anyMatch(e -> e.getCode().value().equals("evt-b")));
     }
 }

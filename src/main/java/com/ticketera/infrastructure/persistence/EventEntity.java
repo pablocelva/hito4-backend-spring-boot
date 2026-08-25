@@ -1,9 +1,13 @@
 package com.ticketera.infrastructure.persistence;
 
 import com.ticketera.domain.entity.Event;
+import com.ticketera.domain.valueobject.CityId;
 import com.ticketera.domain.valueobject.EventId;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -12,8 +16,11 @@ import jakarta.persistence.Table;
 public class EventEntity {
 
     @Id
-    @Column(name = "id", nullable = false, length = 36)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "code", nullable = false, unique = true, length = 50)
+    private String code;
 
     @Column(name = "city_id", nullable = false, length = 50)
     private String cityId;
@@ -33,8 +40,9 @@ public class EventEntity {
     protected EventEntity() {
     }
 
-    private EventEntity(String id, String cityId, String name, String venue, int capacity, int availableTickets) {
+    private EventEntity(Long id, String code, String cityId, String name, String venue, int capacity, int availableTickets) {
         this.id = id;
+        this.code = code;
         this.cityId = cityId;
         this.name = name;
         this.venue = venue;
@@ -43,9 +51,11 @@ public class EventEntity {
     }
 
     public static EventEntity fromDomain(Event event) {
+        Long dbId = event.getDbId();
         return new EventEntity(
-            event.getId().value(),
-            event.getCityId().value(),
+            dbId,
+            event.getCode().value(),
+            event.getCityId().value().toString(),
             event.getName(),
             event.getVenue(),
             event.getCapacity(),
@@ -54,12 +64,17 @@ public class EventEntity {
 
     public Event toDomain() {
         return Event.reconstitute(
-            new EventId(id),
-            new com.ticketera.domain.valueobject.CityId(cityId),
+            id,
+            new EventId(code),
+            new CityId(Long.valueOf(cityId)),
             name, venue, capacity, availableTickets);
     }
 
-    public String getId() {
+    public Long getId() {
         return id;
+    }
+
+    public String getCode() {
+        return code;
     }
 }

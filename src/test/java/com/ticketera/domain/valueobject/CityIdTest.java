@@ -9,10 +9,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class CityIdTest {
 
     @Test
-    @DisplayName("Creates CityId and trims value")
-    void createsCityIdAndTrims() {
-        CityId id = new CityId("  LIM  ");
-        assertEquals("LIM", id.value());
+    @DisplayName("Creates CityId with Long value")
+    void createsCityIdWithLongValue() {
+        CityId id = new CityId(1L);
+        assertEquals(1L, id.value());
     }
 
     @Test
@@ -20,14 +20,6 @@ class CityIdTest {
     void throwsWhenValueIsNull() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
             () -> new CityId(null));
-        assertEquals("City id is required", ex.getMessage());
-    }
-
-    @Test
-    @DisplayName("Throws when value is blank")
-    void throwsWhenValueIsBlank() {
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> new CityId("   "));
         assertEquals("City id is required", ex.getMessage());
     }
 }

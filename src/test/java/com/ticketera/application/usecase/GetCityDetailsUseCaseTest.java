@@ -3,7 +3,6 @@ package com.ticketera.application.usecase;
 import com.ticketera.domain.entity.City;
 import com.ticketera.domain.exception.CityNotFoundException;
 import com.ticketera.domain.repository.CityRepository;
-import com.ticketera.domain.valueobject.CityId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,22 +26,22 @@ class GetCityDetailsUseCaseTest {
     @Test
     @DisplayName("Returns city when found")
     void returnsCityWhenFound() {
-        City city = new City(new CityId("LIM"), "Lima");
-        when(repository.findById(any())).thenReturn(Optional.of(city));
+        City city = new City(1L, "LIM", "Lima");
+        when(repository.findById(1L)).thenReturn(Optional.of(city));
 
-        City result = useCase.execute("LIM");
+        City result = useCase.execute(1L);
 
-        assertEquals("LIM", result.getId().value());
+        assertEquals(1L, result.getId().value());
         assertEquals("Lima", result.getName());
     }
 
     @Test
     @DisplayName("Throws CityNotFoundException when missing")
     void throwsCityNotFoundWhenMissing() {
-        when(repository.findById(any())).thenReturn(Optional.empty());
+        when(repository.findById(999L)).thenReturn(Optional.empty());
 
         CityNotFoundException ex = assertThrows(CityNotFoundException.class,
-            () -> useCase.execute("MISS"));
-        assertEquals("City with id 'MISS' not found", ex.getMessage());
+            () -> useCase.execute(999L));
+        assertEquals("City with id '999' not found", ex.getMessage());
     }
 }

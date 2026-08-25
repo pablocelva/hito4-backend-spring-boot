@@ -1,8 +1,14 @@
-server:
-  port: 8081
-
 spring:
   application:
     name: ticketera
   profiles:
     default: dev
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+server:
+  port: 8081

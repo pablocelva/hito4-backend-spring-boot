@@ -28,10 +28,10 @@ class UpdateEventUseCaseTest {
     @Test
     @DisplayName("Updates event details successfully")
     void updatesEventDetails() {
-        Event event = Event.reconstitute(new EventId("evt-1"), "Jazz Night", "Teatro", 100, 100);
-        when(repository.findById(new EventId("evt-1"))).thenReturn(Optional.of(event));
+        Event event = Event.reconstitute(1L, new EventId("evt-1"), "Jazz Night", "Teatro", 100, 100);
+        when(repository.findById(1L)).thenReturn(Optional.of(event));
 
-        Event result = useCase.execute("evt-1", "Rock Night", "Estadio", 500);
+        Event result = useCase.execute(1L, "Rock Night", "Estadio", 500);
 
         assertEquals("Rock Night", result.getName());
         assertEquals("Estadio", result.getVenue());
@@ -42,21 +42,21 @@ class UpdateEventUseCaseTest {
     @Test
     @DisplayName("Throws EventNotFoundException when event does not exist")
     void throwsEventNotFound() {
-        when(repository.findById(any())).thenReturn(Optional.empty());
+        when(repository.findById(999L)).thenReturn(Optional.empty());
 
         EventNotFoundException ex = assertThrows(EventNotFoundException.class,
-            () -> useCase.execute("missing", "New", "Venue", 100));
-        assertEquals("Event not found: missing", ex.getMessage());
+            () -> useCase.execute(999L, "New", "Venue", 100));
+        assertEquals("Event not found: 999", ex.getMessage());
     }
 
     @Test
     @DisplayName("Throws when capacity is less than sold tickets")
     void throwsWhenCapacityLessThanSold() {
-        Event event = Event.reconstitute(new EventId("evt-1"), "Jazz", "Teatro", 100, 80);
-        when(repository.findById(new EventId("evt-1"))).thenReturn(Optional.of(event));
+        Event event = Event.reconstitute(1L, new EventId("evt-1"), "Jazz", "Teatro", 100, 80);
+        when(repository.findById(1L)).thenReturn(Optional.of(event));
 
         InvalidOrderException ex = assertThrows(InvalidOrderException.class,
-            () -> useCase.execute("evt-1", "Small", "Venue", 10));
+            () -> useCase.execute(1L, "Small", "Venue", 10));
         assertTrue(ex.getMessage().contains("cannot be less than sold tickets"));
         verify(repository, never()).save(any());
     }

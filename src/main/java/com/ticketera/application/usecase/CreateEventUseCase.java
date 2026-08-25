@@ -2,8 +2,8 @@ package com.ticketera.application.usecase;
 
 import com.ticketera.domain.entity.Event;
 import com.ticketera.domain.repository.EventRepository;
-import com.ticketera.domain.valueobject.EventId;
 
+import java.util.Locale;
 import java.util.UUID;
 
 public class CreateEventUseCase {
@@ -15,8 +15,16 @@ public class CreateEventUseCase {
     }
 
     public Event execute(String name, String venue, int capacity) {
-        Event event = new Event(new EventId(UUID.randomUUID().toString()), name, venue, capacity);
-        repository.save(event);
+        Event event = new Event(generateEventCode(name), name, venue, capacity);
+        Long id = repository.save(event);
+        event.setDbId(id);
         return event;
+    }
+
+    private String generateEventCode(String name) {
+        String slug = name.toLowerCase(Locale.ROOT)
+            .replaceAll("[^a-z0-9]+", "-")
+            .replaceAll("^-|-$", "");
+        return "evt-" + slug + "-" + UUID.randomUUID().toString().substring(0, 6);
     }
 }

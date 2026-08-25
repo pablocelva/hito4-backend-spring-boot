@@ -31,11 +31,12 @@ public class TicketOrderController {
     }
 
     @Operation(summary = "Comprar entradas", description = "Procesa una orden, descuenta inventario y confirma por email si se indica")
-    @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Compra procesada"),
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Compra procesada exitosamente"),
         @ApiResponse(responseCode = "400", description = "Datos invalidos"),
         @ApiResponse(responseCode = "404", description = "Evento no existe"),
-        @ApiResponse(responseCode = "422", description = "Entradas insuficientes")
+        @ApiResponse(responseCode = "422", description = "Entradas insuficientes"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @PostMapping
     public ResponseEntity<OrderResponse> purchase(@Valid @RequestBody TicketOrderRequest request) {

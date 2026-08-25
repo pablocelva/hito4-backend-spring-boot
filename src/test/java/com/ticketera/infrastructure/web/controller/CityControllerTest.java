@@ -7,7 +7,6 @@ import com.ticketera.application.usecase.GetCityDetailsUseCase;
 import com.ticketera.application.usecase.UpdateCityUseCase;
 import com.ticketera.domain.entity.City;
 import com.ticketera.domain.exception.CityNotFoundException;
-import com.ticketera.domain.valueobject.CityId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -51,33 +49,35 @@ class CityControllerTest {
     @DisplayName("Lists all cities")
     void listsAllCities() throws Exception {
         when(getCitiesUseCase.execute()).thenReturn(List.of(
-            new City(new CityId("LIM"), "Lima")));
+            new City(1L, "LIM", "Lima")));
 
         mockMvc.perform(get("/api/v1/cities"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].id").value("LIM"))
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[0].code").value("LIM"))
             .andExpect(jsonPath("$[0].name").value("Lima"));
     }
 
     @Test
     @DisplayName("Returns city by id")
     void returnsCityById() throws Exception {
-        when(getCityDetailsUseCase.execute("LIM"))
-            .thenReturn(new City(new CityId("LIM"), "Lima"));
+        when(getCityDetailsUseCase.execute(1L))
+            .thenReturn(new City(1L, "LIM", "Lima"));
 
-        mockMvc.perform(get("/api/v1/cities/LIM"))
+        mockMvc.perform(get("/api/v1/cities/1"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value("LIM"))
+            .andExpect(jsonPath("$.id").value(1))
+            .andExpect(jsonPath("$.code").value("LIM"))
             .andExpect(jsonPath("$.name").value("Lima"));
     }
 
     @Test
     @DisplayName("Returns 404 when city not found")
     void returns404WhenCityNotFound() throws Exception {
-        when(getCityDetailsUseCase.execute("MISS"))
-            .thenThrow(new CityNotFoundException("City not found: MISS"));
+        when(getCityDetailsUseCase.execute(999L))
+            .thenThrow(new CityNotFoundException("City not found: 999"));
 
-        mockMvc.perform(get("/api/v1/cities/MISS"))
+        mockMvc.perform(get("/api/v1/cities/999"))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.code").value(404));
     }
@@ -85,29 +85,30 @@ class CityControllerTest {
     @Test
     @DisplayName("Creates city and returns 201")
     void createsCityAndReturns201() throws Exception {
-        when(createCityUseCase.execute(anyString(), anyString()))
-            .thenReturn(new City(new CityId("LIM"), "Lima"));
+        when(createCityUseCase.execute("LIM", "Lima"))
+            .thenReturn(new City(1L, "LIM", "Lima"));
 
         mockMvc.perform(post("/api/v1/cities")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"id": "LIM", "name": "Lima"}
+                    {"code": "LIM", "name": "Lima"}
                     """))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.id").value("LIM"))
+            .andExpect(jsonPath("$.id").value(1))
+            .andExpect(jsonPath("$.code").value("LIM"))
             .andExpect(jsonPath("$.name").value("Lima"));
     }
 
     @Test
     @DisplayName("Updates city successfully")
     void updatesCitySuccessfully() throws Exception {
-        when(updateCityUseCase.execute("LIM", "Lima Metropolitana"))
-            .thenReturn(new City(new CityId("LIM"), "Lima Metropolitana"));
+        when(updateCityUseCase.execute(1L, "Lima Metropolitana"))
+            .thenReturn(new City(1L, "LIM", "Lima Metropolitana"));
 
-        mockMvc.perform(put("/api/v1/cities/LIM")
+        mockMvc.perform(put("/api/v1/cities/1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"id": "LIM", "name": "Lima Metropolitana"}
+                    {"code": "LIM", "name": "Lima Metropolitana"}
                     """))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.name").value("Lima Metropolitana"));
@@ -116,13 +117,13 @@ class CityControllerTest {
     @Test
     @DisplayName("Returns 404 when updating non-existent city")
     void returns404WhenUpdatingNonExistentCity() throws Exception {
-        when(updateCityUseCase.execute(anyString(), anyString()))
-            .thenThrow(new CityNotFoundException("City with id 'MISS' not found"));
+        when(updateCityUseCase.execute(any(), any()))
+            .thenThrow(new CityNotFoundException("City with id '999' not found"));
 
-        mockMvc.perform(put("/api/v1/cities/MISS")
+        mockMvc.perform(put("/api/v1/cities/999")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"id": "MISS", "name": "New Name"}
+                    {"code": "MISS", "name": "New Name"}
                     """))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.code").value(404));
@@ -131,9 +132,9 @@ class CityControllerTest {
     @Test
     @DisplayName("Deletes city and returns 204")
     void deletesCityAndReturns204() throws Exception {
-        mockMvc.perform(delete("/api/v1/cities/LIM"))
+        mockMvc.perform(delete("/api/v1/cities/1"))
             .andExpect(status().isNoContent());
 
-        verify(deleteCityUseCase).execute("LIM");
+        verify(deleteCityUseCase).execute(1L);
     }
 }

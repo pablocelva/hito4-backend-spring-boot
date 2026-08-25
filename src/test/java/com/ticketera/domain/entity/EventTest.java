@@ -12,14 +12,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("Event")
 public class EventTest {
     private Event newEvent() {
-        return new Event(new EventId("EVT-001"), "Jazz Night", "Jazz Club", 500);
+        return new Event("evt-001", "Jazz Night", "Jazz Club", 500);
     }
 
     @Test
     @DisplayName("Should initialize event with correct values")
     public void shouldInitializeEventWithCorrectValues() {
         Event event = newEvent();
-        assertEquals(new EventId("EVT-001"), event.getId());
+        assertEquals("evt-001", event.getCode().value());
         assertEquals("Jazz Night", event.getName());
         assertEquals("Jazz Club", event.getVenue());
         assertEquals(500, event.getCapacity());
@@ -35,7 +35,7 @@ public class EventTest {
     @Test
     @DisplayName("Should return false when event is sold out")
     public void shouldReturnFalseWhenEventIsSoldOut() {
-        Event event = new Event(new EventId("EVT-002"), "Full House", "Arena", 1);
+        Event event = new Event("evt-002", "Full House", "Arena", 1);
         event.reserveTickets(new TicketQuantity(1));
         assertFalse(event.hasAvailability());
     }
@@ -87,7 +87,7 @@ public class EventTest {
     @Test
     @DisplayName("Reconstitutes event preserving availability")
     void reconstitutesEventPreservingAvailability() {
-        Event event = Event.reconstitute(new EventId("evt-1"), "Jazz Night", "Teatro", 100, 30);
+        Event event = Event.reconstitute(1L, new EventId("evt-1"), "Jazz Night", "Teatro", 100, 30);
 
         assertEquals(30, event.getAvailableTickets());
         assertEquals(70, event.getTicketSold());

@@ -7,8 +7,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record TicketResponseDto(
     @Schema(description = "Identificador de la entrada", example = "550e8400-e29b-41d4-a716-446655440000")
     String id,
-    @Schema(description = "Identificador del evento", example = "evt-jazz-001")
-    String eventId,
+    @Schema(description = "ID del evento", example = "1")
+    Long eventId,
     @Schema(description = "Nombre del cliente", example = "Juan Perez")
     String customerName,
     @Schema(description = "Email del cliente", example = "customer@email.com")
@@ -18,7 +18,7 @@ public record TicketResponseDto(
     public static TicketResponseDto fromDomain(Ticket ticket) {
         return new TicketResponseDto(
             ticket.getId().value(),
-            ticket.getEventId().value(),
+            ticket.getEventId(),
             ticket.getCustomerName(),
             ticket.getCustomerEmail());
     }

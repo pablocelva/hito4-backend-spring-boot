@@ -5,32 +5,34 @@ import com.ticketera.domain.valueobject.EventId;
 import com.ticketera.domain.valueobject.TicketQuantity;
 
 public class Event {
-    private final EventId id;
-    private final CityId cityId;
+    private Long id;
+    private final EventId code;
+    private CityId cityId;
     private String name;
     private String venue;
     private int capacity;
     private final TicketPool ticketPool;
 
-    public Event(EventId id, String name, String venue, int capacity) {
-        this.id = id;
-        this.cityId = new CityId("LIM");
+    public Event(String code, String name, String venue, int capacity) {
+        this.code = new EventId(code);
+        this.cityId = new CityId(1L);
         this.name = name;
         this.venue = venue;
         this.capacity = capacity;
         this.ticketPool = new TicketPool(capacity);
     }
 
-    public static Event reconstitute(EventId id, String name, String venue, int capacity, int availableTickets) {
-        return new Event(id, name, venue, capacity, availableTickets, "LIM");
+    public static Event reconstitute(Long id, EventId code, String name, String venue, int capacity, int availableTickets) {
+        return new Event(id, code, name, venue, capacity, availableTickets, 1L);
     }
 
-    public static Event reconstitute(EventId id, CityId cityId, String name, String venue, int capacity, int availableTickets) {
-        return new Event(id, name, venue, capacity, availableTickets, cityId.value());
+    public static Event reconstitute(Long id, EventId code, CityId cityId, String name, String venue, int capacity, int availableTickets) {
+        return new Event(id, code, name, venue, capacity, availableTickets, cityId.value());
     }
 
-    private Event(EventId id, String name, String venue, int capacity, int availableTickets, String cityId) {
+    private Event(Long id, EventId code, String name, String venue, int capacity, int availableTickets, Long cityId) {
         this.id = id;
+        this.code = code;
         this.cityId = new CityId(cityId);
         this.name = name;
         this.venue = venue;
@@ -38,12 +40,24 @@ public class Event {
         this.ticketPool = new TicketPool(capacity, availableTickets);
     }
 
-    public EventId getId() {
+    public Long getDbId() {
         return id;
+    }
+
+    public void setDbId(Long id) {
+        this.id = id;
+    }
+
+    public EventId getCode() {
+        return code;
     }
 
     public CityId getCityId() {
         return cityId;
+    }
+
+    public void setCityId(Long cityId) {
+        this.cityId = new CityId(cityId);
     }
 
     public String getName() {

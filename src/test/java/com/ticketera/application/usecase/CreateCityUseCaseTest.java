@@ -25,17 +25,17 @@ class CreateCityUseCaseTest {
     void createsCitySuccessfully() {
         City result = useCase.execute("LIM", "Lima");
 
-        assertEquals("LIM", result.getId().value());
+        assertEquals("LIM", result.getCode());
         assertEquals("Lima", result.getName());
         verify(repository).save(any(City.class));
     }
 
     @Test
-    @DisplayName("Throws when id is null")
-    void throwsWhenIdIsNull() {
+    @DisplayName("Throws when code is null")
+    void throwsWhenCodeIsNull() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
             () -> useCase.execute(null, "Lima"));
-        assertEquals("City id is required", ex.getMessage());
+        assertEquals("City code is required", ex.getMessage());
     }
 
     @Test

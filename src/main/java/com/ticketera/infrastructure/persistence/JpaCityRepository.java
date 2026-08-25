@@ -2,8 +2,6 @@ package com.ticketera.infrastructure.persistence;
 
 import com.ticketera.domain.entity.City;
 import com.ticketera.domain.repository.CityRepository;
-import com.ticketera.domain.valueobject.CityId;
-
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -19,22 +17,33 @@ public class JpaCityRepository implements CityRepository {
     }
 
     @Override
-    public Optional<City> findById(CityId id) {
-        return jpaRepository.findById(id.value()).map(CityEntity::toDomain);
+    public Optional<City> findById(Long id) {
+        return jpaRepository.findById(id).map(CityEntity::toDomain);
+    }
+
+    @Override
+    public Optional<City> findByCode(String code) {
+        return jpaRepository.findAll().stream()
+            .filter(e -> e.getCode().equals(code))
+            .findFirst()
+            .map(CityEntity::toDomain);
     }
 
     @Override
     public List<City> findAll() {
-        return jpaRepository.findAll().stream().map(CityEntity::toDomain).toList();
+        return jpaRepository.findAll().stream()
+            .map(CityEntity::toDomain)
+            .toList();
     }
 
     @Override
-    public void save(City city) {
-        jpaRepository.save(CityEntity.fromDomain(city));
+    public Long save(City city) {
+        CityEntity saved = jpaRepository.save(CityEntity.fromDomain(city));
+        return saved.getId();
     }
 
     @Override
-    public void deleteById(CityId id) {
-        jpaRepository.deleteById(id.value());
+    public void deleteById(Long id) {
+        jpaRepository.deleteById(id);
     }
 }

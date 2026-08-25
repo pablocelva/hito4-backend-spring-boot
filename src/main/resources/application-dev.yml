@@ -1,19 +1,25 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   datasource:
-    url: jdbc:postgresql://localhost:5433/ticketera_db
-    username: user_ticketera
-    password: pass_ticketera
+    url: ${TICKETERA_DB_URL:jdbc:postgresql://localhost:5433/ticketera_db}
+    username: ${TICKETERA_DB_USERNAME:user_ticketera}
+    password: ${TICKETERA_DB_PASSWORD:pass_ticketera}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
     properties:
-      hibernate:
-        format_sql: true
+      hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
 
 springdoc:
   api-docs:
     path: /api-docs
     enabled: true
   swagger-ui:
+    path: /swagger-ui.html
     enabled: true
+        
+server:
+  port: ${SERVER_PORT:8081}

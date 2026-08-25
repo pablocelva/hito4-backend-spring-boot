@@ -7,10 +7,6 @@ import jakarta.validation.constraints.Positive;
 @Schema(description = "Peticion de creacion de evento")
 public record CreateEventRequest(
 
-    @Schema(description = "Codigo de ciudad", example = "LIM")
-    @NotBlank(message = "City id is required")
-    String cityId,
-
     @Schema(description = "Nombre del evento", example = "Jazz Night")
     @NotBlank(message = "Name is required")
     String name,

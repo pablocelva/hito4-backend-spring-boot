@@ -1,7 +1,6 @@
 package com.ticketera.application.usecase;
 
 import com.ticketera.domain.repository.CityRepository;
-import com.ticketera.domain.valueobject.CityId;
 
 public class DeleteCityUseCase {
 
@@ -11,7 +10,7 @@ public class DeleteCityUseCase {
         this.repository = repository;
     }
 
-    public void execute(String id) {
-        repository.deleteById(new CityId(id));
+    public void execute(Long id) {
+        repository.deleteById(id);
     }
 }

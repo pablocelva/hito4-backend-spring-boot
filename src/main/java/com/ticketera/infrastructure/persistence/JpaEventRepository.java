@@ -2,7 +2,6 @@ package com.ticketera.infrastructure.persistence;
 
 import com.ticketera.domain.entity.Event;
 import com.ticketera.domain.repository.EventRepository;
-import com.ticketera.domain.valueobject.EventId;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -18,8 +17,16 @@ public class JpaEventRepository implements EventRepository {
     }
 
     @Override
-    public Optional<Event> findById(EventId id) {
-        return jpaRepository.findById(id.value()).map(EventEntity::toDomain);
+    public Optional<Event> findById(Long id) {
+        return jpaRepository.findById(id).map(EventEntity::toDomain);
+    }
+
+    @Override
+    public Optional<Event> findByCode(String code) {
+        return jpaRepository.findAll().stream()
+            .filter(e -> e.getCode().equals(code))
+            .findFirst()
+            .map(EventEntity::toDomain);
     }
 
     @Override
@@ -30,12 +37,13 @@ public class JpaEventRepository implements EventRepository {
     }
 
     @Override
-    public void save(Event event) {
-        jpaRepository.save(EventEntity.fromDomain(event));
+    public Long save(Event event) {
+        EventEntity saved = jpaRepository.save(EventEntity.fromDomain(event));
+        return saved.getId();
     }
 
     @Override
-    public void deleteById(EventId id) {
-        jpaRepository.deleteById(id.value());
+    public void deleteById(Long id) {
+        jpaRepository.deleteById(id);
     }
 }

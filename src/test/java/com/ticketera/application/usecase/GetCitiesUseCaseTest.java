@@ -2,7 +2,6 @@ package com.ticketera.application.usecase;
 
 import com.ticketera.domain.entity.City;
 import com.ticketera.domain.repository.CityRepository;
-import com.ticketera.domain.valueobject.CityId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,7 +25,7 @@ class GetCitiesUseCaseTest {
     @Test
     @DisplayName("Returns all cities")
     void returnsAllCities() {
-        List<City> expected = List.of(new City(new CityId("LIM"), "Lima"));
+        List<City> expected = List.of(new City(1L, "LIM", "Lima"));
         when(repository.findAll()).thenReturn(expected);
 
         List<City> result = useCase.execute();

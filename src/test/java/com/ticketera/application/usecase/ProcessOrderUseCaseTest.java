@@ -1,6 +1,5 @@
 package com.ticketera.application.usecase;
 
-import com.ticketera.application.port.MessageNotifier;
 import com.ticketera.domain.entity.Event;
 import com.ticketera.domain.exception.EventNotFoundException;
 import com.ticketera.domain.repository.EventRepository;
@@ -18,7 +17,7 @@ class ProcessOrderUseCaseTest {
 
     private EventRepository eventRepository;
     private TicketRepository ticketRepository;
-    private MessageNotifier notifier;
+    private com.ticketera.application.port.MessageNotifier notifier;
     private ProcessOrderUseCase useCase;
     private Event event;
 
@@ -26,29 +25,22 @@ class ProcessOrderUseCaseTest {
     void setUp() {
         eventRepository = mock(EventRepository.class);
         ticketRepository = mock(TicketRepository.class);
-        notifier = mock(MessageNotifier.class);
+        notifier = mock(com.ticketera.application.port.MessageNotifier.class);
         useCase = new ProcessOrderUseCase(eventRepository, ticketRepository, notifier);
         event = Event.reconstitute(
-            new com.ticketera.domain.valueobject.EventId("evt-001"),
+            1L, new com.ticketera.domain.valueobject.EventId("evt-001"),
             "Jazz Night", "Gran Teatro", 500, 500);
-        when(eventRepository.findById(new com.ticketera.domain.valueobject.EventId("evt-001")))
+        when(eventRepository.findById(1L))
             .thenReturn(Optional.of(event));
     }
 
     @Test
-    @DisplayName("Throws when event id is null")
+    @DisplayName("Throws EventNotFoundException when event id is null")
     void throwsWhenEventIdIsNull() {
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+        when(eventRepository.findById(null)).thenReturn(Optional.empty());
+        EventNotFoundException ex = assertThrows(EventNotFoundException.class,
             () -> useCase.execute(null, 2));
-        assertEquals("Event ID cannot be blank", ex.getMessage());
-    }
-
-    @Test
-    @DisplayName("Throws when event id is empty")
-    void throwsWhenEventIdIsEmpty() {
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> useCase.execute("", 2));
-        assertEquals("Event ID cannot be blank", ex.getMessage());
+        assertTrue(ex.getMessage().contains("Event not found"));
     }
 
     @Test
@@ -56,7 +48,7 @@ class ProcessOrderUseCaseTest {
     void throwsWhenQuantityIsZero() {
         com.ticketera.domain.exception.InvalidOrderException ex = assertThrows(
             com.ticketera.domain.exception.InvalidOrderException.class,
-            () -> useCase.execute("evt-001", 0));
+            () -> useCase.execute(1L, 0));
         assertEquals("Quantity must be positive", ex.getMessage());
     }
 
@@ -65,24 +57,24 @@ class ProcessOrderUseCaseTest {
     void throwsWhenQuantityIsNegative() {
         com.ticketera.domain.exception.InvalidOrderException ex = assertThrows(
             com.ticketera.domain.exception.InvalidOrderException.class,
-            () -> useCase.execute("evt-001", -1));
+            () -> useCase.execute(1L, -1));
         assertEquals("Quantity must be positive", ex.getMessage());
     }
 
     @Test
     @DisplayName("Throws EventNotFoundException when event does not exist")
     void throwsEventNotFoundWhenEventDoesNotExist() {
-        when(eventRepository.findById(any())).thenReturn(Optional.empty());
+        when(eventRepository.findById(999L)).thenReturn(Optional.empty());
         EventNotFoundException ex = assertThrows(EventNotFoundException.class,
-            () -> useCase.execute("missing", 2));
-        assertEquals("Event not found: missing", ex.getMessage());
+            () -> useCase.execute(999L, 2));
+        assertEquals("Event not found: 999", ex.getMessage());
         verify(eventRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("Reserves tickets, persists and returns confirmation")
     void reservesTicketsPersistsAndReturnsConfirmation() {
-        OrderResult result = useCase.execute("evt-001", 2);
+        OrderResult result = useCase.execute(1L, 2);
 
         assertEquals("evt-001", result.eventId());
         assertEquals("Jazz Night", result.eventName());

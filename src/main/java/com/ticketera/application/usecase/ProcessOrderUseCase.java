@@ -6,7 +6,6 @@ import com.ticketera.domain.entity.Ticket;
 import com.ticketera.domain.exception.EventNotFoundException;
 import com.ticketera.domain.repository.EventRepository;
 import com.ticketera.domain.repository.TicketRepository;
-import com.ticketera.domain.valueobject.EventId;
 import com.ticketera.domain.valueobject.TicketId;
 import com.ticketera.domain.valueobject.TicketQuantity;
 
@@ -26,16 +25,15 @@ public class ProcessOrderUseCase {
         this.notifier = notifier;
     }
 
-    public OrderResult execute(String eventId, int quantity) {
+    public OrderResult execute(Long eventId, int quantity) {
         return execute(eventId, quantity, null, null);
     }
 
-    public OrderResult execute(String eventId, int quantity, String customerName, String customerEmail) {
-        EventId id = new EventId(eventId);
+    public OrderResult execute(Long eventId, int quantity, String customerName, String customerEmail) {
         TicketQuantity tickets = new TicketQuantity(quantity);
 
-        Event event = eventRepository.findById(id)
-            .orElseThrow(() -> new EventNotFoundException("Event not found: " + id.value()));
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventId));
 
         event.reserveTickets(tickets);
         eventRepository.save(event);
@@ -43,7 +41,7 @@ public class ProcessOrderUseCase {
         for (int i = 0; i < quantity; i++) {
             Ticket ticket = new Ticket(
                 new TicketId(UUID.randomUUID().toString()),
-                id,
+                event.getDbId(),
                 customerName != null ? customerName : "anonymous",
                 customerEmail != null ? customerEmail : "");
             ticketRepository.save(ticket);
@@ -51,9 +49,9 @@ public class ProcessOrderUseCase {
 
         notifier.send(ADMIN_EMAIL,
             "Order processed for: " + event.getName()
-                + " (" + tickets.value() + " tickets), with ID: " + id.value());
+                + " (" + tickets.value() + " tickets), with ID: " + event.getCode().value());
 
-        return new OrderResult(id.value(), event.getName(),
+        return new OrderResult(event.getCode().value(), event.getName(),
             tickets.value(), event.getAvailableTickets());
     }
 }
