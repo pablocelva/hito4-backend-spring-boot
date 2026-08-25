@@ -24,13 +24,14 @@ class CreateEventUseCaseTest {
     @Test
     @DisplayName("Creates event with generated code and persists it")
     void createsEventWithGeneratedCodeAndPersistsIt() {
-        Event result = useCase.execute("Jazz Night", "Gran Teatro", 500);
+        Event result = useCase.execute(1L, "Jazz Night", "Gran Teatro", 500);
 
         assertNotNull(result.getCode());
         assertEquals("Jazz Night", result.getName());
         assertEquals("Gran Teatro", result.getVenue());
         assertEquals(500, result.getCapacity());
         assertEquals(500, result.getAvailableTickets());
+        assertEquals(1L, result.getCityId().value());
         verify(repository).save(any(Event.class));
     }
 
@@ -38,7 +39,7 @@ class CreateEventUseCaseTest {
     @DisplayName("Delegates validation to domain")
     void delegatesValidationToDomain() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> useCase.execute("Jazz Night", "Gran Teatro", 0));
+            () -> useCase.execute(1L, "Jazz Night", "Gran Teatro", 0));
         assertEquals("Capacity must be positive", ex.getMessage());
         verify(repository, never()).save(any());
     }

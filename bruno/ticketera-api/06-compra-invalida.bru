@@ -1,5 +1,5 @@
 meta {
-  name: 06 - Compra inválida
+  name: 06 - Compra invalida
   type: http
   seq: 6
 }
@@ -12,13 +12,15 @@ post {
 
 body:json {
   {
-    "eventId": "evt-jazz-001",
-    "quantity": 0
+    "eventId": 1,
+    "quantity": 0,
+    "customerName": "Test User",
+    "customerEmail": "invalid-email"
   }
 }
 
 script:post-response {
-  test("Cantidad inválida responde 400", function() {
+  test("Datos invalidos responde 400", function() {
     expect(res.getStatus()).to.equal(400);
   });
 

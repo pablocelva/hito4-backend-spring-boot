@@ -95,17 +95,20 @@ class EventControllerTest {
     @Test
     @DisplayName("Creates event and returns 201")
     void createsEventAndReturns201() throws Exception {
-        when(createEventUseCase.execute(any(), any(), anyInt()))
-            .thenReturn(Event.reconstitute(1L, new EventId("evt-new"), "Rock Fest", "Estadio", 1000, 1000));
+        when(createEventUseCase.execute(any(), any(), any(), anyInt()))
+            .thenReturn(Event.reconstitute(1L, new EventId("evt-new"),
+                new com.ticketera.domain.valueobject.CityId(1L),
+                "Rock Fest", "Estadio", 1000, 1000));
 
         mockMvc.perform(post("/api/v1/events")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    {"name": "Rock Fest", "venue": "Estadio", "capacity": 1000}
+                    {"cityId": 1, "name": "Rock Fest", "venue": "Estadio", "capacity": 1000}
                     """))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").value(1))
             .andExpect(jsonPath("$.code").value("evt-new"))
+            .andExpect(jsonPath("$.cityId").value(1))
             .andExpect(jsonPath("$.availableTickets").value(1000));
     }
 

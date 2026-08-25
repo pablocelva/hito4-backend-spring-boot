@@ -25,9 +25,16 @@ Repositorios que sirven de base a este proyecto:
   - [Estructura del directorio](#estructura-del-directorio)
   - [Descripción de archivos](#descripción-de-archivos)
   - [Nota sobre la arquitectura](#nota-sobre-la-arquitectura)
+- [Modelo de datos](#modelo-de-datos)
 - [Lenguaje Ubicuo](#lenguaje-ubicuo)
 - [Contexto Delimitado](#contexto-delimitado)
 - [API REST](#api-rest)
+  - [Contratos de los endpoints](#contratos-de-los-endpoints)
+  - [Manejo global de errores](#manejo-global-de-errores)
+- [Documentación interactiva (Swagger UI)](#documentación-interactiva-swagger-ui)
+- [Infraestructura Docker](#infraestructura-docker)
+- [Perfiles de ejecución](#perfiles-de-ejecución)
+- [Pruebas de contrato (Bruno)](#pruebas-de-contrato-bruno)
 - [Tecnologías y dependencias](#tecnologías-y-dependencias)
   - [Lenguaje y plataforma](#lenguaje-y-plataforma)
   - [Build](#build)
@@ -44,6 +51,7 @@ Repositorios que sirven de base a este proyecto:
   - [Compilar y verificar el proyecto](#compilar-y-verificar-el-proyecto)
   - [Ejecutar la suite de pruebas unitarias](#ejecutar-la-suite-de-pruebas-unitarias)
   - [Generar el reporte de cobertura JaCoCo](#generar-el-reporte-de-cobertura-jacoco)
+- [Referencia rápida de comandos](#referencia-rápida-de-comandos)
 
 ## Arquitectura
 
@@ -73,8 +81,6 @@ hito4-backend-spring-boot/
 │       ├── 06-compra-invalida.bru
 │       ├── bruno.json
 │       └── environments/local.bru
-├── docs/
-│   └── PLAN.md
 └── src/
     ├── main/java/com/ticketera/
     │   ├── TicketeraApplication.java
@@ -218,7 +224,7 @@ hito4-backend-spring-boot/
 |---|---|
 | `ApplicationConfig.java` | Clase `@Configuration` que actúa como *composition root*: registra los catorce casos de uso como beans (`@Bean`), inyectándoles los adaptadores de infraestructura. Mantiene `domain` y `application` libres de anotaciones de framework. |
 | `OpenApiConfig.java` | Bean `OpenAPI` con la metadata de la documentación. Anotado con `@Profile("dev")`: fuera del perfil dev ni siquiera se registra en el contexto. |
-| `DevDataSeeder.java` | `CommandLineRunner` acotado al perfil `dev`: siembra la ciudad `LIM` (Lima) y dos eventos de ejemplo solo si las tablas están vacías. |
+| `DevDataSeeder.java` | `CommandLineRunner` acotado al perfil `dev`: siembra tres ciudades (`LIM` Lima, `BOG` Bogotá, `MAD` Madrid) y dos eventos de ejemplo (Jazz Night y Rock Fest) solo si las tablas están vacías. |
 
 **Recursos de configuración e infraestructura local:**
 
@@ -256,7 +262,7 @@ hito4-backend-spring-boot/
 | Archivo | Responsabilidad |
 |---|---|
 | `ProcessOrderUseCase.java` | Procesa una orden: construye los Value Objects, busca el evento, reserva las entradas, **persiste el cambio con `save()`**, **crea una entrada en la tabla `tickets` por cada unidad comprada**, notifica al administrador y retorna un `OrderResult`. Depende de `EventRepository`, `TicketRepository` y `MessageNotifier`. |
-| `CreateEventUseCase.java` | Crea un nuevo evento generando su identificador (`UUID`), delegando las validaciones al dominio, persistiéndolo y devolviendo el `Long id` generado. Depende de `EventRepository`. |
+| `CreateEventUseCase.java` | Crea un nuevo evento generando su identificador (`UUID`), asignando la `cityId` proporcionada, delegando las validaciones al dominio, persistiéndolo y devolviendo el `Long id` generado. Depende de `EventRepository`. |
 | `GetEventsUseCase.java` | Consulta la cartelera completa delegando en `EventRepository.findAll()`. |
 | `GetEventDetailsUseCase.java` | Consulta un evento por identificador (`Long`) y lanza `EventNotFoundException` cuando no existe. |
 | `UpdateEventUseCase.java` | Actualiza nombre, lugar y capacidad de un evento existente. Valida que la nueva capacidad no sea menor que las entradas vendidas. Depende de `EventRepository`. |
@@ -452,6 +458,296 @@ Ejemplo de respuesta de error:
 }
 ```
 
+### Contratos de los endpoints
+
+#### Events
+
+**`POST /api/v1/events`** — Crear evento
+
+Request:
+```json
+{
+  "cityId": 1,
+  "name": "Jazz Night",
+  "venue": "Gran Teatro Lima",
+  "capacity": 500
+}
+```
+
+| Campo | Tipo | Requerido | Validación |
+|---|---|---|---|
+| `cityId` | `Long` | Sí | `@Positive` |
+| `name` | `String` | Sí | `@NotBlank` |
+| `venue` | `String` | Sí | `@NotBlank` |
+| `capacity` | `int` | Sí | `@Positive` |
+
+Response `201`:
+```json
+{
+  "id": 1,
+  "code": "evt-jazz-night-202aff",
+  "cityId": 1,
+  "name": "Jazz Night",
+  "venue": "Gran Teatro Lima",
+  "capacity": 500,
+  "availableTickets": 500,
+  "ticketsSold": 0
+}
+```
+
+---
+
+**`GET /api/v1/events`** — Listar eventos
+
+Response `200`:
+```json
+[
+  {
+    "id": 1,
+    "code": "evt-jazz-night-202aff",
+    "cityId": 1,
+    "name": "Jazz Night",
+    "venue": "Gran Teatro Lima",
+    "capacity": 500,
+    "availableTickets": 500,
+    "ticketsSold": 0
+  }
+]
+```
+
+---
+
+**`GET /api/v1/events/{id}`** — Detalle de evento
+
+Response `200`:
+```json
+{
+  "id": 1,
+  "code": "evt-jazz-night-202aff",
+  "cityId": 1,
+  "name": "Jazz Night",
+  "venue": "Gran Teatro Lima",
+  "capacity": 500,
+  "availableTickets": 500,
+  "ticketsSold": 0
+}
+```
+
+Response `404`:
+```json
+{
+  "code": 404,
+  "message": "Event not found: 999",
+  "timestamp": "2026-08-25T12:00:00.000000"
+}
+```
+
+---
+
+**`PUT /api/v1/events/{id}`** — Actualizar evento
+
+Request:
+```json
+{
+  "name": "Jazz Night Updated",
+  "venue": "Teatro Nacional",
+  "capacity": 600
+}
+```
+
+| Campo | Tipo | Requerido | Validación |
+|---|---|---|---|
+| `name` | `String` | Sí | `@NotBlank` |
+| `venue` | `String` | Sí | `@NotBlank` |
+| `capacity` | `int` | Sí | `@Positive` |
+
+> **Nota:** No se puede cambiar el `cityId` ni el `code`. La capacidad nueva no puede ser menor que las entradas ya vendidas.
+
+Response `200`: mismo schema que `GET /api/v1/events/{id}`.
+
+---
+
+**`DELETE /api/v1/events/{id}`** — Eliminar evento
+
+Response `204`: sin body.
+
+Response `404`:
+```json
+{
+  "code": 404,
+  "message": "Event not found: 999",
+  "timestamp": "2026-08-25T12:00:00.000000"
+}
+```
+
+Response `409` (evento con ventas):
+```json
+{
+  "code": 409,
+  "message": "Cannot delete event with sold tickets",
+  "timestamp": "2026-08-25T12:00:00.000000"
+}
+```
+
+---
+
+**`GET /api/v1/events/{id}/tickets`** — Entradas vendidas de un evento
+
+Response `200`:
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "eventId": 1,
+    "customerName": "Juan Perez",
+    "customerEmail": "customer@email.com"
+  }
+]
+```
+
+#### Orders
+
+**`POST /api/v1/orders`** — Comprar entradas
+
+Request:
+```json
+{
+  "eventId": 1,
+  "quantity": 2,
+  "customerName": "Juan Perez",
+  "customerEmail": "customer@email.com"
+}
+```
+
+| Campo | Tipo | Requerido | Validación |
+|---|---|---|---|
+| `eventId` | `Long` | Sí | `@NotNull` |
+| `quantity` | `int` | Sí | `@Positive` |
+| `customerName` | `String` | No | — |
+| `customerEmail` | `String` | No | `@Email` (si se provee) |
+
+Response `201`:
+```json
+{
+  "eventId": "evt-jazz-night-202aff",
+  "eventName": "Jazz Night",
+  "ticketsPurchased": 2,
+  "remainingTickets": 498
+}
+```
+
+Response `404`:
+```json
+{
+  "code": 404,
+  "message": "Event not found: 999",
+  "timestamp": "2026-08-25T12:00:00.000000"
+}
+```
+
+Response `422` (sin stock):
+```json
+{
+  "code": 422,
+  "message": "Not enough tickets available",
+  "timestamp": "2026-08-25T12:00:00.000000"
+}
+```
+
+#### Cities
+
+**`POST /api/v1/cities`** — Crear ciudad
+
+Request:
+```json
+{
+  "code": "LIM",
+  "name": "Lima"
+}
+```
+
+| Campo | Tipo | Requerido | Validación |
+|---|---|---|---|
+| `code` | `String` | Sí | `@NotBlank` |
+| `name` | `String` | Sí | `@NotBlank` |
+
+> **Nota:** El `code` es inmutable. No se puede cambiar después de la creación.
+
+Response `201`:
+```json
+{
+  "id": 1,
+  "code": "LIM",
+  "name": "Lima"
+}
+```
+
+---
+
+**`GET /api/v1/cities`** — Listar ciudades
+
+Response `200`:
+```json
+[
+  {
+    "id": 1,
+    "code": "LIM",
+    "name": "Lima"
+  }
+]
+```
+
+---
+
+**`GET /api/v1/cities/{id}`** — Detalle de ciudad
+
+Response `200`:
+```json
+{
+  "id": 1,
+  "code": "LIM",
+  "name": "Lima"
+}
+```
+
+---
+
+**`PUT /api/v1/cities/{id}`** — Actualizar nombre de ciudad
+
+Request:
+```json
+{
+  "name": "Lima Metropolitana"
+}
+```
+
+| Campo | Tipo | Requerido | Validación |
+|---|---|---|---|
+| `name` | `String` | Sí | `@NotBlank` |
+
+> **Nota:** Solo se puede actualizar el `name`. El `code` es inmutable.
+
+Response `200`: mismo schema que `GET /api/v1/cities/{id}`.
+
+---
+
+**`DELETE /api/v1/cities/{id}`** — Eliminar ciudad
+
+Response `204`: sin body.
+
+#### Health Check
+
+**`GET /healthcheck`** — Verificar que el servicio está activo
+
+Response `200`:
+```json
+{
+  "status": "UP",
+  "app": "ticketera",
+  "timestamp": "2026-08-25T12:00:00"
+}
+```
+
 ## Documentación interactiva (Swagger UI)
 
 Gracias a `springdoc-openapi-starter-webmvc-ui`, la API se autodocumenta bajo especificación OpenAPI 3:
@@ -492,7 +788,7 @@ Las credenciales coinciden con las del `application-dev.yml`, de modo que el mic
 | Esquema | `ddl-auto: update` (crea/actualiza tablas) | `ddl-auto: validate` (solo valida contra las entidades) |
 | SQL en consola | Sí (`show-sql: true`) | No |
 | Swagger UI / api-docs | Habilitados | Bloqueados (propiedades + `@Profile("dev")`) |
-| Datos semilla | `DevDataSeeder` inserta 2 eventos si la tabla está vacía | No corre (sin seed en producción) |
+| Datos semilla | `DevDataSeeder` inserta 3 ciudades y 2 eventos si las tablas están vacías | No corre (sin seed en producción) |
 
 Datos semilla del perfil dev:
 
@@ -636,7 +932,7 @@ Este proyecto utiliza **JUnit 5** y **Mockito** (gestionados por el BOM de Sprin
 | `CityId` | 7 | Valor válido, `null`, equals mismo valor, equals distinto valor, equals distinto tipo, equals misma referencia, hashCode consistente |
 | `ProcessOrderUseCase` | 7 | `eventId` null/vacío, `quantity` 0/negativo, evento no encontrado, éxito con persistencia, cliente anónimo (null), cliente con nombre/email |
 | `SendBookingConfirmationUseCase` | 3 | Email null/vacío, éxito |
-| `CreateEventUseCase` | 2 | Creación válida (id generado + persistencia), validación delegada al dominio |
+| `CreateEventUseCase` | 2 | Creación válida con `cityId` (id generado + persistencia + verificación de `getCityId()`), validación delegada al dominio |
 | `GetEventDetailsUseCase` | 2 | Evento encontrado, `EventNotFoundException` cuando no existe |
 | `GetEventsUseCase` | 1 | Retorna la cartelera completa desde el repositorio |
 | `UpdateEventUseCase` | 3 | Éxito, evento no encontrado, capacidad < vendidas |
@@ -647,7 +943,7 @@ Este proyecto utiliza **JUnit 5** y **Mockito** (gestionados por el BOM de Sprin
 | `GetCityDetailsUseCase` | 2 | Ciudad encontrada, no encontrada |
 | `UpdateCityUseCase` | 3 | Éxito, no encontrada, nombre blank |
 | `DeleteCityUseCase` | 1 | Éxito |
-| `EventControllerTest` | 9 | Corte web: listado, detalle, 404, creación 201, validación 400, actualización 200, actualización 404, eliminación 204, eliminación 404 (excluido del reporte de cobertura) |
+| `EventControllerTest` | 9 | Corte web: listado, detalle, 404, creación 201 (con `cityId`), validación 400, actualización 200, actualización 404, eliminación 204, eliminación 404 (excluido del reporte de cobertura) |
 | `TicketOrderControllerTest` | 4 | Corte web: compra 201, email opcional, sold out 422 y validación 400 (excluido del reporte de cobertura) |
 | `CityControllerTest` | 7 | Corte web: listado, detalle, 404, creación 201, actualización 200, actualización 404, eliminación 204 (excluido del reporte de cobertura) |
 | `JpaEventRepositoryTest` | 3 | Persistencia: crear y recuperar, reservar entradas, listar todos (excluido del reporte de cobertura) |
@@ -729,3 +1025,40 @@ mvn clean test jacoco:report
 
 Después de ejecutar el comando, ver la evidencia de cobertura en:
 `target/site/jacoco/index.html`
+
+## Referencia rápida de comandos
+
+### Infraestructura
+
+```bash
+docker compose up -d                                        # levantar PostgreSQL
+docker compose ps                                           # verificar estado healthy
+docker compose stop                                         # detener conservando datos
+docker compose down -v                                      # detener y borrar datos
+docker exec -it pg-ticketera psql -U user_ticketera -d ticketera_db -c "SELECT id, name, capacity, available_tickets FROM events;"
+```
+
+### Aplicación
+
+```bash
+Copy-Item .env.example .env                                 # crear .env (solo la primera vez, solo Windows)
+mvn spring-boot:run                                         # perfil dev (default)
+mvn spring-boot:run "-Dspring-boot.run.profiles=prod"       # perfil prod
+```
+
+### Build y testing
+
+```bash
+mvn clean compile                                           # compilar
+mvn test                                                    # ejecutar 131 tests unitarios
+mvn clean test jacoco:report                                # tests + reporte de cobertura
+bru run --env local                                         # tests de contrato (requiere app levantada)
+```
+
+### Reset completo
+
+```bash
+docker compose down -v && docker compose up -d              # resetear DB
+# reiniciar Spring Boot, luego:
+bru run --env local                                         # ejecutar contratos contra datos frescos
+```

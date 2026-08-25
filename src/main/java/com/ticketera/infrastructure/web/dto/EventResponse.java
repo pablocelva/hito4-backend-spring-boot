@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record EventResponse(
     @Schema(description = "ID de la base de datos", example = "1") Long id,
     @Schema(description = "Codigo del evento", example = "evt-jazz-001") String code,
-    @Schema(description = "Codigo de ciudad", example = "LIM") String cityId,
+    @Schema(description = "ID de la ciudad", example = "1") Long cityId,
     @Schema(description = "Nombre del evento", example = "Jazz Night") String name,
     @Schema(description = "Lugar", example = "Gran Teatro Lima") String venue,
     @Schema(description = "Capacidad total", example = "500") int capacity,
@@ -19,7 +19,7 @@ public record EventResponse(
         return new EventResponse(
             event.getDbId(),
             event.getCode().value(),
-            event.getCityId().value().toString(),
+            event.getCityId().value(),
             event.getName(),
             event.getVenue(),
             event.getCapacity(),

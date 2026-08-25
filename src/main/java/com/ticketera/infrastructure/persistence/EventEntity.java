@@ -22,8 +22,8 @@ public class EventEntity {
     @Column(name = "code", nullable = false, unique = true, length = 50)
     private String code;
 
-    @Column(name = "city_id", nullable = false, length = 50)
-    private String cityId;
+    @Column(name = "city_id", nullable = false)
+    private Long cityId;
 
     @Column(name = "name", nullable = false)
     private String name;
@@ -40,7 +40,7 @@ public class EventEntity {
     protected EventEntity() {
     }
 
-    private EventEntity(Long id, String code, String cityId, String name, String venue, int capacity, int availableTickets) {
+    private EventEntity(Long id, String code, Long cityId, String name, String venue, int capacity, int availableTickets) {
         this.id = id;
         this.code = code;
         this.cityId = cityId;
@@ -55,7 +55,7 @@ public class EventEntity {
         return new EventEntity(
             dbId,
             event.getCode().value(),
-            event.getCityId().value().toString(),
+            event.getCityId().value(),
             event.getName(),
             event.getVenue(),
             event.getCapacity(),
@@ -66,7 +66,7 @@ public class EventEntity {
         return Event.reconstitute(
             id,
             new EventId(code),
-            new CityId(Long.valueOf(cityId)),
+            new CityId(cityId),
             name, venue, capacity, availableTickets);
     }
 

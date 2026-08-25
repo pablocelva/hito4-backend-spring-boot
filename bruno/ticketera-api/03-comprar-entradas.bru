@@ -12,8 +12,9 @@ post {
 
 body:json {
   {
-    "eventId": "evt-jazz-001",
+    "eventId": {{createdEventId}},
     "quantity": 2,
+    "customerName": "Juan Perez",
     "customerEmail": "customer@email.com"
   }
 }
@@ -21,6 +22,11 @@ body:json {
 script:post-response {
   test("Compra exitosa responde 201", function() {
     expect(res.getStatus()).to.equal(201);
+  });
+
+  test("Retorna evento y cantidad comprada", function() {
+    expect(res.getBody().eventId).to.exist;
+    expect(res.getBody().ticketsPurchased).to.equal(2);
   });
 
   test("Descuenta del inventario", function() {

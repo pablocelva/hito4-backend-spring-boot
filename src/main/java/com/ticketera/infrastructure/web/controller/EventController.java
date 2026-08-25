@@ -78,7 +78,7 @@ public class EventController {
     })
     @PostMapping
     public ResponseEntity<EventResponse> createEvent(@Valid @RequestBody CreateEventRequest request) {
-        var event = createEventUseCase.execute(request.name(), request.venue(), request.capacity());
+        var event = createEventUseCase.execute(request.cityId(), request.name(), request.venue(), request.capacity());
         return ResponseEntity.status(HttpStatus.CREATED).body(EventResponse.fromDomain(event));
     }
 

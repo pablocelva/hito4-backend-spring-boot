@@ -12,8 +12,10 @@ post {
 
 body:json {
   {
-    "eventId": "evt-jazz-001",
-    "quantity": 99999
+    "eventId": {{createdEventId}},
+    "quantity": 99999,
+    "customerName": "Test User",
+    "customerEmail": "test@email.com"
   }
 }
 

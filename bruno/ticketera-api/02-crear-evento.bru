@@ -12,9 +12,10 @@ post {
 
 body:json {
   {
+    "cityId": 1,
     "name": "Concierto de Prueba",
-    "venue": "Arena Breña",
-    "capacity": 200
+    "venue": "Arena Brena",
+    "capacity": 500
   }
 }
 
@@ -24,6 +25,12 @@ script:post-response {
   });
 
   test("Consolida registro con tickets disponibles", function() {
-    expect(res.getBody().availableTickets).to.equal(200);
+    expect(res.getBody().availableTickets).to.equal(500);
   });
+
+  test("Ciudad asignada correctamente", function() {
+    expect(res.getBody().cityId).to.equal(1);
+  });
+
+  bru.setVar("createdEventId", res.getBody().id);
 }

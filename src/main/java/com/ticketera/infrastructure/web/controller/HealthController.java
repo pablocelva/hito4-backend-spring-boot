@@ -1,4 +1,4 @@
-package com.ticketera.infrastructure.web;
+package com.ticketera.infrastructure.web.controller;
 
 import java.time.LocalDateTime;
 import java.util.Map;

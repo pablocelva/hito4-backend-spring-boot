@@ -14,8 +14,9 @@ public class CreateEventUseCase {
         this.repository = repository;
     }
 
-    public Event execute(String name, String venue, int capacity) {
+    public Event execute(Long cityId, String name, String venue, int capacity) {
         Event event = new Event(generateEventCode(name), name, venue, capacity);
+        event.setCityId(cityId);
         Long id = repository.save(event);
         event.setDbId(id);
         return event;
