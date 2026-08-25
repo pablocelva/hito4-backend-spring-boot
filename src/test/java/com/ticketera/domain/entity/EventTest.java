@@ -124,4 +124,23 @@ public class EventTest {
         event.reserveTickets(new TicketQuantity(1));
         assertTrue(event.hasSoldTickets());
     }
+
+    @Test
+    @DisplayName("Should set city id")
+    void shouldSetCityId() {
+        Event event = newEvent();
+        event.setCityId(5L);
+        assertEquals(5L, event.getCityId().value());
+    }
+
+    @Test
+    @DisplayName("Reconstitutes event with city id")
+    void reconstitutesEventWithCityId() {
+        Event event = Event.reconstitute(1L, new EventId("evt-1"),
+            new com.ticketera.domain.valueobject.CityId(10L),
+            "Rock", "Stadium", 200, 100);
+        assertEquals(10L, event.getCityId().value());
+        assertEquals(200, event.getCapacity());
+        assertEquals(100, event.getAvailableTickets());
+    }
 }

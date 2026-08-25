@@ -12,9 +12,11 @@ class CustomerTest {
     @Test
     @DisplayName("Creates customer with valid data")
     void createsCustomerWithValidData() {
-        Customer customer = new Customer("CUS-001", "Pablo", new Email("pablo@example.com"));
+        Email email = new Email("pablo@example.com");
+        Customer customer = new Customer("CUS-001", "Pablo", email);
         assertEquals("CUS-001", customer.getId());
         assertEquals("Pablo", customer.getName());
+        assertEquals(email, customer.getEmail());
     }
 
     @Test

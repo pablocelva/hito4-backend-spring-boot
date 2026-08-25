@@ -6,7 +6,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![Swagger](https://img.shields.io/badge/OpenAPI-Swagger%20UI-85EA2D?logo=swagger&logoColor=black)
-![JUnit](https://img.shields.io/badge/JUnit%205%20%2B%20Mockito-112%20tests-25A162?logo=junit5&logoColor=white)
+![JUnit](https://img.shields.io/badge/JUnit%205%20%2B%20Mockito-131%20tests-25A162?logo=junit5&logoColor=white)
 ![Coverage](https://img.shields.io/badge/cobertura-100%25-brightgreen)
 ![Bruno](https://img.shields.io/badge/contratos-Bruno%206%2F6-F6B93B)
 
@@ -63,6 +63,18 @@ hito4-backend-spring-boot/
 ├── compose.yaml
 ├── .env.example
 ├── README.md
+├── bruno/
+│   └── ticketera-api/
+│       ├── 01-listar-eventos.bru
+│       ├── 02-crear-evento.bru
+│       ├── 03-comprar-entradas.bru
+│       ├── 04-compra-sin-stock.bru
+│       ├── 05-evento-inexistente.bru
+│       ├── 06-compra-invalida.bru
+│       ├── bruno.json
+│       └── environments/local.bru
+├── docs/
+│   └── PLAN.md
 └── src/
     ├── main/java/com/ticketera/
     │   ├── TicketeraApplication.java
@@ -70,74 +82,126 @@ hito4-backend-spring-boot/
     │   │   ├── port/
     │   │   │   └── MessageNotifier.java
     │   │   └── usecase/
+    │   │       ├── CreateCityUseCase.java
     │   │       ├── CreateEventUseCase.java
+    │   │       ├── DeleteCityUseCase.java
+    │   │       ├── DeleteEventUseCase.java
+    │   │       ├── GetCitiesUseCase.java
+    │   │       ├── GetCityDetailsUseCase.java
     │   │       ├── GetEventDetailsUseCase.java
     │   │       ├── GetEventsUseCase.java
+    │   │       ├── GetEventTicketsUseCase.java
     │   │       ├── OrderResult.java
     │   │       ├── ProcessOrderUseCase.java
-    │   │       └── SendBookingConfirmationUseCase.java
+    │   │       ├── SendBookingConfirmationUseCase.java
+    │   │       ├── UpdateCityUseCase.java
+    │   │       └── UpdateEventUseCase.java
     │   ├── domain/
     │   │   ├── entity/
+    │   │   │   ├── City.java
     │   │   │   ├── Customer.java
     │   │   │   ├── Event.java
+    │   │   │   ├── Ticket.java
     │   │   │   └── TicketPool.java
     │   │   ├── exception/
+    │   │   │   ├── CityNotFoundException.java
     │   │   │   ├── EventNotFoundException.java
     │   │   │   ├── InvalidEmailException.java
     │   │   │   ├── InvalidOrderException.java
     │   │   │   └── SoldOutException.java
     │   │   ├── repository/
-    │   │   │   └── EventRepository.java
+    │   │   │   ├── CityRepository.java
+    │   │   │   ├── EventRepository.java
+    │   │   │   └── TicketRepository.java
     │   │   └── valueobject/
+    │   │       ├── CityId.java
     │   │       ├── Email.java
     │   │       ├── EventId.java
     │   │       ├── Money.java
+    │   │       ├── TicketId.java
     │   │       └── TicketQuantity.java
     │   └── infrastructure/
     │       ├── config/
     │       │   ├── ApplicationConfig.java
-    │       │   ├── DevDataSeeder.java
-    │       │   └── OpenApiConfig.java
+    │       │   └── DevDataSeeder.java
     │       ├── notification/
     │       │   └── EmailNotificationService.java
     │       ├── persistence/
+    │       │   ├── CityEntity.java
+    │       │   ├── CityJpaRepository.java
     │       │   ├── EventEntity.java
     │       │   ├── EventJpaRepository.java
-    │       │   └── JpaEventRepository.java
+    │       │   ├── JpaCityRepository.java
+    │       │   ├── JpaEventRepository.java
+    │       │   ├── JpaTicketRepository.java
+    │       │   ├── TicketEntity.java
+    │       │   └── TicketJpaRepository.java
     │       └── web/
+    │           ├── config/
+    │           │   └── OpenApiConfig.java
+    │           ├── controller/
+    │           │   ├── CityController.java
+    │           │   ├── EventController.java
+    │           │   ├── HealthController.java
+    │           │   └── TicketOrderController.java
     │           ├── dto/
+    │           │   ├── ApiResponse.java
+    │           │   ├── CityRequestDto.java
+    │           │   ├── CityResponseDto.java
     │           │   ├── CreateEventRequest.java
     │           │   ├── ErrorResponse.java
     │           │   ├── EventResponse.java
     │           │   ├── OrderResponse.java
-    │           │   └── TicketOrderRequest.java
-    │           ├── EventController.java
-    │           ├── GlobalExceptionHandler.java
-    │           └── TicketOrderController.java
+    │           │   ├── TicketOrderRequest.java
+    │           │   ├── TicketResponseDto.java
+    │           │   ├── UpdateCityRequest.java
+    │           │   └── UpdateEventRequest.java
+    │           └── GlobalExceptionHandler.java
     ├── main/resources/
     │   ├── application.yml
     │   ├── application-dev.yml
     │   └── application-prod.yml
     └── test/java/com/ticketera/
         ├── application/usecase/
+        │   ├── CreateCityUseCaseTest.java
         │   ├── CreateEventUseCaseTest.java
+        │   ├── DeleteCityUseCaseTest.java
+        │   ├── DeleteEventUseCaseTest.java
+        │   ├── GetCitiesUseCaseTest.java
+        │   ├── GetCityDetailsUseCaseTest.java
         │   ├── GetEventDetailsUseCaseTest.java
         │   ├── GetEventsUseCaseTest.java
+        │   ├── GetEventTicketsUseCaseTest.java
         │   ├── ProcessOrderUseCaseTest.java
-        │   └── SendBookingConfirmationUseCaseTest.java
+        │   ├── SendBookingConfirmationUseCaseTest.java
+        │   ├── UpdateCityUseCaseTest.java
+        │   └── UpdateEventUseCaseTest.java
         ├── domain/
         │   ├── entity/
+        │   │   ├── CityTest.java
         │   │   ├── CustomerTest.java
         │   │   ├── EventTest.java
-        │   │   └── TicketPoolTest.java
+        │   │   ├── TicketPoolTest.java
+        │   │   └── TicketTest.java
         │   └── valueobject/
+        │       ├── CityIdTest.java
         │       ├── EmailTest.java
         │       ├── EventIdTest.java
         │       ├── MoneyTest.java
+        │       ├── TicketIdTest.java
         │       └── TicketQuantityTest.java
-        └── infrastructure/web/
-            ├── EventControllerTest.java
-            └── TicketOrderControllerTest.java
+        └── infrastructure/
+            ├── persistence/
+            │   └── JpaEventRepositoryTest.java
+            └── web/
+                ├── controller/
+                │   ├── CityControllerTest.java
+                │   ├── EventControllerTest.java
+                │   └── TicketOrderControllerTest.java
+                ├── dto/
+                │   └── ApiResponseTest.java
+                └── exception/
+                    └── GlobalExceptionHandlerTest.java
 ```
 
 ### Descripción de archivos
@@ -152,7 +216,7 @@ hito4-backend-spring-boot/
 
 | Archivo | Responsabilidad |
 |---|---|
-| `ApplicationConfig.java` | Clase `@Configuration` que actúa como *composition root*: registra los cinco casos de uso como beans (`@Bean`), inyectándoles los adaptadores de infraestructura. Mantiene `domain` y `application` libres de anotaciones de framework. |
+| `ApplicationConfig.java` | Clase `@Configuration` que actúa como *composition root*: registra los catorce casos de uso como beans (`@Bean`), inyectándoles los adaptadores de infraestructura. Mantiene `domain` y `application` libres de anotaciones de framework. |
 | `OpenApiConfig.java` | Bean `OpenAPI` con la metadata de la documentación. Anotado con `@Profile("dev")`: fuera del perfil dev ni siquiera se registra en el contexto. |
 | `DevDataSeeder.java` | `CommandLineRunner` acotado al perfil `dev`: siembra la ciudad `LIM` (Lima) y dos eventos de ejemplo solo si las tablas están vacías. |
 
@@ -170,16 +234,19 @@ hito4-backend-spring-boot/
 
 | Archivo | Responsabilidad |
 |---|---|
-| `Event.java` | Aggregate Root del contexto Ticketing. Identificado por un `EventId` y vinculado a una `CityId`. Contiene nombre, venue, capacidad y delega el control de inventario a su `TicketPool`. Expone `hasAvailability()`, `getAvailableTickets()`, `getTicketSold()`, `hasSoldTickets()`, `reserveTickets(TicketQuantity)` y `updateDetails(...)` como puntos de entrada para modificar el estado. Incluye la fábrica estática `reconstitute(...)` para reconstruir el agregado desde la base de datos. |
-| `Ticket.java` | Entidad que representa una entrada vendida, identificada por un `TicketId` y vinculada a un `EventId`. Almacena nombre y email del cliente. |
+| `Event.java` | Aggregate Root del contexto Ticketing. Identificado por un `EventId` (String code) y un `Long id` (PK auto-generado), vinculado a una `CityId`. Contiene nombre, venue, capacidad y delega el control de inventario a su `TicketPool`. Expone `hasAvailability()`, `getAvailableTickets()`, `getTicketSold()`, `hasSoldTickets()`, `reserveTickets(TicketQuantity)` y `updateDetails(...)` como puntos de entrada para modificar el estado. Incluye la fábrica estática `reconstitute(...)` para reconstruir el agregado desde la base de datos. |
+| `Ticket.java` | Entidad que representa una entrada vendida, identificada por un `TicketId` (UUID) y vinculada a un `eventId` (Long). Almacena nombre y email del cliente. |
 | `TicketPool.java` | Entidad interna que gestiona el stock de entradas disponibles. Valida que la capacidad sea positiva y que haya stock suficiente antes de reservar, evitando la sobreventa. Su constructor de reconstitución `(capacidad, disponibles)` valida que las disponibles estén entre 0 y la capacidad. |
 | `Customer.java` | Entidad que representa a la persona que compra entradas, identificada por un `id` único y un email válido (Value Object `Email`). |
+| `City.java` | Entidad que representa una ciudad, identificada por un `Long id` (PK auto-generado) y un `String code` (código inmutable). Tiene un `name` mutable que se modifica con `rename()`. El campo `id` se establece después de persistir con `setId(Long)`. |
 
 **Value Objects:**
 
 | Archivo | Responsabilidad |
 |---|---|
 | `EventId.java` | Identificador inmutable de un evento. Rechaza `null` y valores en blanco. |
+| `CityId.java` | Identificador de ciudad envuelto en un `Long`. Rechaza `null`. Implementa `equals()` y `hashCode()` para comparación consistente. |
+| `TicketId.java` | Identificador de entrada envuelto en un `String` (UUID). Rechaza `null` y valores en blanco, normaliza con trim. |
 | `TicketQuantity.java` | Cantidad de entradas de una orden. Rechaza valores ≤ 0 (`InvalidOrderException`). |
 | `Money.java` | Precio de una entrada. Rechaza valores ≤ 0 (`InvalidOrderException`). |
 | `Email.java` | Email normalizado (trim + minúsculas). Rechaza `null`, vacíos o formatos inválidos (`InvalidEmailException`). |
@@ -189,12 +256,17 @@ hito4-backend-spring-boot/
 | Archivo | Responsabilidad |
 |---|---|
 | `ProcessOrderUseCase.java` | Procesa una orden: construye los Value Objects, busca el evento, reserva las entradas, **persiste el cambio con `save()`**, **crea una entrada en la tabla `tickets` por cada unidad comprada**, notifica al administrador y retorna un `OrderResult`. Depende de `EventRepository`, `TicketRepository` y `MessageNotifier`. |
-| `CreateEventUseCase.java` | Crea un nuevo evento generando su identificador (`UUID`), delegando las validaciones al dominio y persistiéndolo. Depende de `EventRepository`. |
+| `CreateEventUseCase.java` | Crea un nuevo evento generando su identificador (`UUID`), delegando las validaciones al dominio, persistiéndolo y devolviendo el `Long id` generado. Depende de `EventRepository`. |
 | `GetEventsUseCase.java` | Consulta la cartelera completa delegando en `EventRepository.findAll()`. |
-| `GetEventDetailsUseCase.java` | Consulta un evento por identificador y lanza `EventNotFoundException` cuando no existe. |
+| `GetEventDetailsUseCase.java` | Consulta un evento por identificador (`Long`) y lanza `EventNotFoundException` cuando no existe. |
 | `UpdateEventUseCase.java` | Actualiza nombre, lugar y capacidad de un evento existente. Valida que la nueva capacidad no sea menor que las entradas vendidas. Depende de `EventRepository`. |
 | `DeleteEventUseCase.java` | Elimina un evento que no tenga entradas vendidas. Lanza `InvalidOrderException` si tiene ventas. Depende de `EventRepository`. |
 | `GetEventTicketsUseCase.java` | Consulta todas las entradas vendidas de un evento. Depende de `TicketRepository`. |
+| `CreateCityUseCase.java` | Crea una nueva ciudad con código y nombre, persistiéndola y devolviendo el `Long id` generado. Depende de `CityRepository`. |
+| `GetCitiesUseCase.java` | Consulta todas las ciudades delegando en `CityRepository.findAll()`. |
+| `GetCityDetailsUseCase.java` | Consulta una ciudad por identificador y lanza `CityNotFoundException` cuando no existe. |
+| `UpdateCityUseCase.java` | Actualiza el nombre de una ciudad existente (el código es inmutable). Depende de `CityRepository`. |
+| `DeleteCityUseCase.java` | Elimina una ciudad. Depende de `CityRepository`. |
 | `SendBookingConfirmationUseCase.java` | Envía una confirmación de reserva al cliente. Depende de `MessageNotifier` (inyectado por constructor). |
 | `OrderResult.java` | Record de aplicación que transporta el resultado de una orden hacia la capa de presentación. |
 
@@ -208,9 +280,9 @@ hito4-backend-spring-boot/
 
 | Archivo | Responsabilidad |
 |---|---|
-| `EventRepository.java` | Contrato para acceso a datos de eventos (`Optional<Event> findById(EventId)`, `List<Event> findAll()`, `void save(Event)`, `void deleteById(EventId)`). |
-| `TicketRepository.java` | Contrato para acceso a datos de entradas vendidas (`List<Ticket> findByEventId(EventId)`, `void save(Ticket)`). |
-| `CityRepository.java` | Contrato para acceso a datos de ciudades (`Optional<City> findById(CityId)`, `List<City> findAll()`, `void save(City)`, `void deleteById(CityId)`). |
+| `EventRepository.java` | Contrato para acceso a datos de eventos (`Optional<Event> findById(Long)`, `List<Event> findAll()`, `Long save(Event)`, `void deleteById(Long)`). |
+| `TicketRepository.java` | Contrato para acceso a datos de entradas vendidas (`List<Ticket> findByEventId(Long)`, `void save(Ticket)`). |
+| `CityRepository.java` | Contrato para acceso a datos de ciudades (`Optional<City> findById(Long)`, `List<City> findAll()`, `Long save(City)`, `void deleteById(Long)`). |
 
 **Excepciones personalizadas:**
 
@@ -218,6 +290,7 @@ hito4-backend-spring-boot/
 |---|---|
 | `SoldOutException.java` | Se lanza cuando no hay entradas suficientes para satisfacer una reserva. |
 | `EventNotFoundException.java` | Se lanza cuando no existe el evento solicitado (se mapeará a HTTP 404 desde la capa web). |
+| `CityNotFoundException.java` | Se lanza cuando no existe la ciudad solicitada (se mapea a HTTP 404). |
 | `InvalidOrderException.java` | Se lanza cuando una orden tiene datos inválidos (cantidad o precio ≤ 0). |
 | `InvalidEmailException.java` | Se lanza cuando un email no es válido. |
 
@@ -228,6 +301,7 @@ hito4-backend-spring-boot/
 | `EventController.java` | `@RestController` de la cartelera: `GET /api/v1/events`, `GET /api/v1/events/{id}`, `POST /api/v1/events`, `PUT /api/v1/events/{id}`, `DELETE /api/v1/events/{id}` y `GET /api/v1/events/{id}/tickets`. Valida la entrada con `@Valid` y delega en los casos de uso correspondientes. |
 | `TicketOrderController.java` | `@RestController` de compras: `POST /api/v1/orders`. Ejecuta `ProcessOrderUseCase` y, si se proporciona email, dispara `SendBookingConfirmationUseCase`. Retorna 201 con el detalle de la compra. |
 | `CityController.java` | `@RestController` de ciudades: CRUD completo (`GET`, `GET/{id}`, `POST`, `PUT/{id}`, `DELETE/{id}`). |
+| `HealthController.java` | `@RestController` de salud: `GET /healthcheck`. Retorna 200 OK para verificar que el servicio está activo. |
 | `GlobalExceptionHandler.java` | `@RestControllerAdvice` que centraliza el mapeo de excepciones de negocio y validación a respuestas JSON unificadas (`ErrorResponse`), sin exponer stacktraces. |
 
 **DTOs de la capa web (records):**
@@ -237,23 +311,29 @@ hito4-backend-spring-boot/
 | `CreateEventRequest.java` | Petición de creación de evento con `cityId`, validaciones `@NotBlank`/`@Positive`. |
 | `UpdateEventRequest.java` | Petición de actualización de evento con `name`, `venue`, `capacity`. |
 | `TicketOrderRequest.java` | Petición de compra (`eventId`, `quantity`, `customerName?`, `customerEmail?` con `@Email`). |
-| `EventResponse.java` | Respuesta de cartelera/detalle con `cityId`, `availableTickets` y `ticketsSold`. Se construye con `fromDomain(Event)`. |
+| `EventResponse.java` | Respuesta de cartelera/detalle con `id`, `code`, `cityId`, `availableTickets` y `ticketsSold`. Se construye con `fromDomain(Event)`. |
 | `OrderResponse.java` | Confirmación de compra construida desde `OrderResult`. |
 | `TicketResponseDto.java` | Respuesta de una entrada vendida con `id`, `eventId`, `customerName`, `customerEmail`. |
-| `CityRequestDto.java` | Petición de creación/actualización de ciudad (`id`, `name`). |
-| `CityResponseDto.java` | Respuesta de ciudad con `id` y `name`. |
+| `CityRequestDto.java` | Petición de creación de ciudad (`code`, `name`). |
+| `CityResponseDto.java` | Respuesta de ciudad con `id`, `code` y `name`. |
+| `UpdateCityRequest.java` | Petición de actualización de ciudad (solo `name`, el código es inmutable). |
+| `CreateCityRequest.java` | Petición de creación de ciudad con `code` y `name`. |
+| `ApiResponse.java` | DTO de respuesta exitosa genérica con `message` y `name`. |
 | `ErrorResponse.java` | JSON unificado de errores (`code`, `message`, `timestamp`) con fábrica estática `of(...)`. |
 
 **Infraestructura (excluida de cobertura):**
 
 | Archivo | Responsabilidad |
 |---|---|
-| `EventEntity.java` | Modelo de persistencia JPA (`@Entity`, tabla `events`) con columnas `id`, `city_id`, `name`, `venue`, `capacity` y `available_tickets`. Mapea desde/hacia el agregado `Event` mediante `fromDomain()`/`toDomain()`. |
-| `TicketEntity.java` | Modelo de persistencia JPA (`@Entity`, tabla `tickets`) con columnas `id`, `event_id`, `customer_name`, `customer_email`. Mapea desde/hacia la entidad `Ticket`. |
-| `EventJpaRepository.java` | Interfaz que hereda de `JpaRepository<EventEntity, String>` (Spring Data). Genera las operaciones CRUD de forma automática. |
-| `TicketJpaRepository.java` | Interfaz que hereda de `JpaRepository<TicketEntity, String>` con método `findByEventId(String)`. |
-| `JpaEventRepository.java` | Adaptador `@Repository` que implementa el puerto del dominio `EventRepository`, delegando en `EventJpaRepository` y traduciendo entidad ↔ dominio. Incluye `deleteById`. |
+| `EventEntity.java` | Modelo de persistencia JPA (`@Entity`, tabla `events`) con columnas `id` (Long, auto-generado), `code`, `city_id`, `name`, `venue`, `capacity` y `available_tickets`. Mapea desde/hacia el agregado `Event` mediante `fromDomain()`/`toDomain()`. |
+| `TicketEntity.java` | Modelo de persistencia JPA (`@Entity`, tabla `tickets`) con columnas `id` (String UUID), `event_id` (Long), `customer_name`, `customer_email`. Mapea desde/hacia la entidad `Ticket`. |
+| `CityEntity.java` | Modelo de persistencia JPA (`@Entity`, tabla `cities`) con columnas `id` (Long, auto-generado), `code` (String único), `name`. Mapea desde/hacia la entidad `City`. |
+| `EventJpaRepository.java` | Interfaz que hereda de `JpaRepository<EventEntity, Long>` (Spring Data). Genera las operaciones CRUD de forma automática. |
+| `TicketJpaRepository.java` | Interfaz que hereda de `JpaRepository<TicketEntity, String>` con método `findByEventId(Long)`. |
+| `CityJpaRepository.java` | Interfaz que hereda de `JpaRepository<CityEntity, Long>` (Spring Data). |
+| `JpaEventRepository.java` | Adaptador `@Repository` que implementa el puerto del dominio `EventRepository`, delegando en `EventJpaRepository` y traduciendo entidad ↔ dominio. |
 | `JpaTicketRepository.java` | Adaptador `@Repository` que implementa `TicketRepository`, delegando en `TicketJpaRepository`. |
+| `JpaCityRepository.java` | Adaptador `@Repository` que implementa `CityRepository`, delegando en `CityJpaRepository`. |
 | `EmailNotificationService.java` | Implementación `@Component` de `MessageNotifier` que imprime el email en consola. |
 
 ### Nota sobre la arquitectura
@@ -286,12 +366,14 @@ Ambos enfoques son válidos y cumplen con la rúbrica del Hito 3. La diferencia 
 ```mermaid
 erDiagram
     CITIES {
-        varchar id PK "Codigo de ciudad"
+        bigint id PK "Auto-generado"
+        varchar code UK "Codigo de ciudad"
         varchar name "Nombre"
     }
     EVENTS {
-        varchar id PK "UUID del evento"
-        varchar city_id FK "Ciudad"
+        bigint id PK "Auto-generado"
+        varchar code UK "Identificador unico"
+        bigint city_id FK "Ciudad"
         varchar name "Nombre"
         varchar venue "Lugar"
         int capacity "Capacidad total"
@@ -299,7 +381,7 @@ erDiagram
     }
     TICKETS {
         varchar id PK "UUID de la entrada"
-        varchar event_id FK "Evento"
+        bigint event_id FK "Evento"
         varchar customer_name "Nombre del cliente"
         varchar customer_email "Email del cliente"
     }
@@ -541,18 +623,18 @@ Este proyecto utiliza **JUnit 5** y **Mockito** (gestionados por el BOM de Sprin
 
 | Clase | Tests | Cobertura |
 |---|---|---|
-| `Event` | 12 | `hasAvailability()` true + false, `reserveTickets` éxito/sold out/cantidad cero/negativa, cálculo de disponibles/vendidas, reconstitución, `updateDetails` éxito/capacidad < vendidas, `hasSoldTickets` true + false |
+| `Event` | 14 | `hasAvailability()` true + false, `reserveTickets` éxito/sold out/cantidad cero/negativa, cálculo de disponibles/vendidas, reconstitución (con y sin cityId), `updateDetails` éxito/capacidad < vendidas, `hasSoldTickets` true + false, `setCityId` |
 | `TicketPool` | 9 | `capacity ≤ 0`, `quantity ≤ 0`, `quantity > available`, éxito, pool vacío, reconstitución válida e inválida (disponibles fuera de rango, capacidad no positiva) |
-| `Customer` | 5 | Creación válida, `id` null/blank, `name` null/blank |
+| `Customer` | 5 | Creación válida (incluye `getEmail()`), `id` null/blank, `name` null/blank |
+| `City` | 8 | Creación válida, `code` null/blank, `name` null/blank, rename éxito/null/blank |
+| `Ticket` | 2 | Creación con datos completos, creación con cliente anonymous |
 | `TicketQuantity` | 4 | Valor válido, `quantity ≤ 0` (parameterized: 0, -1, -10) |
 | `Money` | 4 | Valor válido, `price ≤ 0` (parameterized: 0.0, -1.0, -100.0) |
 | `Email` | 5 | Normalización, `null`, blank, sin `@`, sin dominio |
 | `EventId` | 3 | Trim, `null`, blank |
 | `TicketId` | 4 | Valor válido, trim, `null`, blank |
-| `CityId` | 3 | Trim, `null`, blank |
-| `City` | 6 | Creación válida, `name` null/blank, rename éxito/null/blank |
-| `Ticket` | 2 | Creación con datos completos, creación con cliente anonymous |
-| `ProcessOrderUseCase` | 6 | `eventId` null/vacío, `quantity` 0/negativo, evento no encontrado, éxito con persistencia y retorno de `OrderResult` |
+| `CityId` | 7 | Valor válido, `null`, equals mismo valor, equals distinto valor, equals distinto tipo, equals misma referencia, hashCode consistente |
+| `ProcessOrderUseCase` | 7 | `eventId` null/vacío, `quantity` 0/negativo, evento no encontrado, éxito con persistencia, cliente anónimo (null), cliente con nombre/email |
 | `SendBookingConfirmationUseCase` | 3 | Email null/vacío, éxito |
 | `CreateEventUseCase` | 2 | Creación válida (id generado + persistencia), validación delegada al dominio |
 | `GetEventDetailsUseCase` | 2 | Evento encontrado, `EventNotFoundException` cuando no existe |
@@ -560,7 +642,7 @@ Este proyecto utiliza **JUnit 5** y **Mockito** (gestionados por el BOM de Sprin
 | `UpdateEventUseCase` | 3 | Éxito, evento no encontrado, capacidad < vendidas |
 | `DeleteEventUseCase` | 3 | Éxito, evento no encontrado, evento con ventas |
 | `GetEventTicketsUseCase` | 2 | Retorna tickets, lista vacía con `assertTrue(result.isEmpty())` |
-| `CreateCityUseCase` | 3 | Éxito, id null, nombre blank |
+| `CreateCityUseCase` | 3 | Creación válida (id generado + persistencia), validación delegada al dominio |
 | `GetCitiesUseCase` | 1 | Retorna lista de ciudades |
 | `GetCityDetailsUseCase` | 2 | Ciudad encontrada, no encontrada |
 | `UpdateCityUseCase` | 3 | Éxito, no encontrada, nombre blank |
@@ -568,7 +650,10 @@ Este proyecto utiliza **JUnit 5** y **Mockito** (gestionados por el BOM de Sprin
 | `EventControllerTest` | 9 | Corte web: listado, detalle, 404, creación 201, validación 400, actualización 200, actualización 404, eliminación 204, eliminación 404 (excluido del reporte de cobertura) |
 | `TicketOrderControllerTest` | 4 | Corte web: compra 201, email opcional, sold out 422 y validación 400 (excluido del reporte de cobertura) |
 | `CityControllerTest` | 7 | Corte web: listado, detalle, 404, creación 201, actualización 200, actualización 404, eliminación 204 (excluido del reporte de cobertura) |
-| **Total** | **112 tests (85 unitarios + 27 de corte web)** | **100% líneas, 100% métodos, 100% ramas** sobre las 30 clases analizadas |
+| `JpaEventRepositoryTest` | 3 | Persistencia: crear y recuperar, reservar entradas, listar todos (excluido del reporte de cobertura) |
+| `ApiResponseTest` | 4 | OK con nombre, OK sin nombre, error, timestamp (excluido del reporte de cobertura) |
+| `GlobalExceptionHandlerTest` | 6 | Corte web MockMvc: 404 Events, 404 Cities, 422 SoldOut, 400 validación, 409 conflicto, 500 inesperado (excluido del reporte de cobertura) |
+| **Total** | **131 tests (98 unitarios + 33 de integración/web)** | **100% líneas, 100% métodos, 100% ramas** sobre las 30 clases analizadas |
 
 ¹ Las interfaces/puertos (`application/port/`) y la capa `infrastructure` están excluidas del reporte JaCoCo por ser contratos sin código ejecutable y detalles técnicos respectivamente.
 

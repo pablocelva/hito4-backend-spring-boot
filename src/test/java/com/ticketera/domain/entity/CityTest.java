@@ -26,6 +26,14 @@ class CityTest {
     }
 
     @Test
+    @DisplayName("Throws when code is blank")
+    void throwsWhenCodeIsBlank() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+            () -> new City(1L, "  ", "Lima"));
+        assertEquals("City code is required", ex.getMessage());
+    }
+
+    @Test
     @DisplayName("Throws when name is null")
     void throwsWhenNameIsNull() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,

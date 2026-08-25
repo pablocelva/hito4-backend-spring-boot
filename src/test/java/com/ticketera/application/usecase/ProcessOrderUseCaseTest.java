@@ -84,4 +84,26 @@ class ProcessOrderUseCaseTest {
         verify(ticketRepository, times(2)).save(any());
         verify(notifier).send(eq("admin@ticketera.com"), contains("Jazz Night"));
     }
+
+    @Test
+    @DisplayName("Uses anonymous when customerName and customerEmail are null")
+    void usesAnonymousWhenCustomerInfoIsNull() {
+        OrderResult result = useCase.execute(1L, 1, null, null);
+
+        assertEquals("evt-001", result.eventId());
+        verify(ticketRepository).save(argThat(ticket ->
+            ticket.getCustomerName().equals("anonymous")
+                && ticket.getCustomerEmail().equals("")));
+    }
+
+    @Test
+    @DisplayName("Uses provided customer name and email when supplied")
+    void usesProvidedCustomerInfo() {
+        OrderResult result = useCase.execute(1L, 1, "Pablo", "pablo@test.com");
+
+        assertEquals("evt-001", result.eventId());
+        verify(ticketRepository).save(argThat(ticket ->
+            ticket.getCustomerName().equals("Pablo")
+                && ticket.getCustomerEmail().equals("pablo@test.com")));
+    }
 }

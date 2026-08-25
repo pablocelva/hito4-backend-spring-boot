@@ -21,7 +21,7 @@
     <properties>
         <java.version>17</java.version>
         <springdoc-openapi.version>2.8.9</springdoc-openapi.version>
-        <sonar.coverage.exclusions>src/main/java/com/ticketera/infrastructure/**,src/main/java/com/ticketera/domain/repository/**,src/main/java/com/ticketera/TicketeraApplication.java</sonar.coverage.exclusions>
+        <sonar.coverage.exclusions>src/main/java/com/ticketera/infrastructure/**,src/main/java/com/ticketera/domain/repository/**,src/main/java/com/ticketera/application/port/**,src/main/java/com/ticketera/TicketeraApplication.java</sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
@@ -90,6 +90,13 @@
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>com/ticketera/infrastructure/**</exclude>
+                                <exclude>com/ticketera/application/port/**</exclude>
+                                <exclude>com/ticketera/TicketeraApplication.*</exclude>
+                            </excludes>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>report</id>
