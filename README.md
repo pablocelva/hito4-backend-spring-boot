@@ -12,7 +12,7 @@
 
 Ticketera es un sistema de venta de entradas para eventos independientes. Este repositorio evoluciona el **Core de Dominio Puro** construido en el Hito 3 hacia un **microservicio con Spring Boot, PostgreSQL y Docker**, manteniendo el núcleo (`domain` y `application`) completamente aislado de frameworks, siguiendo los principios de **Clean Architecture**, **Domain-Driven Design (DDD)** y **Hexagonal Architecture (Ports & Adapters)**.
 
-**Estado del Hito 4:** migración a Spring Boot, adaptador de persistencia JPA/PostgreSQL, capa web REST con manejo global de errores, configuración por perfiles (dev/prod) con Swagger aislado, Docker Compose con PostgreSQL y colección de pruebas de contrato con Bruno — **todas las fases completadas** (colección Bruno: 6/6 requests en verde).
+**Estado del Hito 4:** migración a Spring Boot, adaptador de persistencia JPA/PostgreSQL, capa web REST con manejo global de errores, configuración por perfiles (dev/prod) con Swagger aislado, Docker Compose con PostgreSQL y colección de pruebas de contrato con Bruno.
 
 Repositorios que sirven de base a este proyecto:
 
@@ -21,6 +21,12 @@ Repositorios que sirven de base a este proyecto:
 
 ## Índice
 
+- [Tecnologías y dependencias](#tecnologías-y-dependencias)
+  - [Lenguaje y plataforma](#lenguaje-y-plataforma)
+  - [Build](#build)
+  - [Dependencias principales](#dependencias-principales)
+  - [Dependencias de testing (scope: test)](#dependencias-de-testing-scope-test)
+  - [Plugins de Maven](#plugins-de-maven)
 - [Arquitectura](#arquitectura)
   - [Estructura del directorio](#estructura-del-directorio)
   - [Descripción de archivos](#descripción-de-archivos)
@@ -35,12 +41,6 @@ Repositorios que sirven de base a este proyecto:
 - [Infraestructura Docker](#infraestructura-docker)
 - [Perfiles de ejecución](#perfiles-de-ejecución)
 - [Pruebas de contrato (Bruno)](#pruebas-de-contrato-bruno)
-- [Tecnologías y dependencias](#tecnologías-y-dependencias)
-  - [Lenguaje y plataforma](#lenguaje-y-plataforma)
-  - [Build](#build)
-  - [Dependencias principales](#dependencias-principales)
-  - [Dependencias de testing (scope: test)](#dependencias-de-testing-scope-test)
-  - [Plugins de Maven](#plugins-de-maven)
 - [Testing y Garantía de Calidad](#testing-y-garantía-de-calidad)
   - [Resumen de cobertura por clase](#resumen-de-cobertura-por-clase)
 - [Instrucciones de ejecución](#instrucciones-de-ejecución)
@@ -52,6 +52,47 @@ Repositorios que sirven de base a este proyecto:
   - [Ejecutar la suite de pruebas unitarias](#ejecutar-la-suite-de-pruebas-unitarias)
   - [Generar el reporte de cobertura JaCoCo](#generar-el-reporte-de-cobertura-jacoco)
 - [Referencia rápida de comandos](#referencia-rápida-de-comandos)
+
+## Tecnologías y dependencias
+
+### Lenguaje y plataforma
+- **Java 17** sobre **Spring Boot 3.5.7** (`spring-boot-starter-parent`)
+- **Hibernate** como proveedor JPA (incluido en `spring-boot-starter-data-jpa`)
+
+### Build
+- **Apache Maven** — Sistema de construcción y gestión de dependencias
+- **spring-boot-maven-plugin** — Empaqueta el jar ejecutable y permite arrancar con `mvn spring-boot:run`
+
+### Infraestructura
+- **Docker / Docker Compose** — Provisiona la base de datos del microservicio (`compose.yaml`)
+- **PostgreSQL 16** — Base de datos relacional persistente (contenedor `pg-ticketera`, puerto `5433`)
+
+### Dependencias principales
+
+| Dependencia | Versión | Propósito |
+|---|---|---|
+| `spring-boot-starter-web` | gestionada por Spring Boot | API REST con Spring Web MVC y Tomcat embebido |
+| `spring-boot-starter-validation` | gestionada por Spring Boot | Validación declarativa con Jakarta Bean Validation (`@Valid`, `@NotBlank`, etc.) |
+| `spring-boot-starter-data-jpa` | gestionada por Spring Boot | Persistencia con Spring Data JPA e Hibernate |
+| `postgresql` | gestionada por Spring Boot | Driver JDBC de PostgreSQL (scope `runtime`) |
+| `springdoc-openapi-starter-webmvc-ui` | 2.8.9 | Especificación OpenAPI 3 y Swagger UI interactiva |
+
+### Dependencias de testing (scope: test)
+
+| Dependencia | Versión | Propósito |
+|---|---|---|
+| `spring-boot-starter-test` | gestionada por Spring Boot | Incluye JUnit 5 (API, engine y params), Mockito, AssertJ y MockMvc para las siguientes fases |
+
+### Plugins de Maven
+
+| Plugin | Versión | Propósito |
+|---|---|---|
+| `spring-boot-maven-plugin` | 3.5.7 | Genera el jar ejecutable y habilita `mvn spring-boot:run` |
+| `maven-surefire-plugin` | gestionada por Spring Boot | Ejecuta la suite de tests con soporte para nombres legibles de JUnit 5 |
+| `jacoco-maven-plugin` | 0.8.15 | Instrumenta el código y genera reportes de cobertura (instrucciones, ramas, métodos, líneas). Excluye `com/ticketera/infrastructure/**` y la clase bootstrap `TicketeraApplication` |
+| `jacoco-console-reporter` | 1.3.2 | Imprime un resumen de cobertura directamente en la consola |
+
+> **Nota sobre cobertura:** la capa `infrastructure` (detalles técnicos: adaptador de persistencia JPA y notificador por email), los contratos de `domain/repository` (interfaces puras sin lógica) y la clase bootstrap `TicketeraApplication` quedan **excluidos** del reporte de cobertura. Esto se configura con la propiedad `sonar.coverage.exclusions` (usada por el console-reporter) y con `<excludes>` en `jacoco-maven-plugin` (usada por el reporte HTML). La cobertura se mide sobre `domain` (entidades, value objects, excepciones) y `application` (casos de uso).
 
 ## Arquitectura
 
@@ -349,23 +390,6 @@ La estructura de este proyecto combina tres patrones complementarios:
 - **Clean Architecture**: separación en capas (`domain`, `application`, `infrastructure`) con dependencias apuntando hacia el núcleo.
 - **Domain-Driven Design (DDD)**: modelado del negocio con entidades, Value Objects auto-validantes, Aggregate Roots y lenguaje ubicuo.
 - **Hexagonal Architecture (Ports & Adapters)**: puertos (`application/port/` y `domain/repository/`) para servicios externos y adaptadores (`infrastructure/persistence/`, `infrastructure/notification/`) para implementaciones concretas.
-
-**Diferencias con el proyecto de ejemplo del profesor (neonpulse):**
-
-| Elemento | Profesor (neonpulse) | Este proyecto (ticketera) | Razón |
-|---|---|---|---|
-| `domain/service/` | `StockManager`, `PurchaseValidator` | No existe | La lógica de validación vive en las entidades (`TicketPool.reserve()`) y Value Objects (`TicketQuantity`), siguiendo el principio DDD de que las entidades protegen sus propios invariantes. |
-| `application/port/` | `MessageNotifier`, `SmsNotifier` | `MessageNotifier` | Se incluye `MessageNotifier` como puerto de aplicación para servicios externos. No se incluye `SmsNotifier` porque el dominio no maneja números de teléfono. |
-| `application/service/` | `PaymentService`, `PurchaseService`, `ShoppingCart` | No existe | Los casos de uso (`ProcessOrderUseCase`, `SendBookingConfirmationUseCase`) ya orquestan la lógica de aplicación. Agregar servicios adicionales sería redundante. |
-
-**Justificación técnica:**
-
-El proyecto de ejemplo del profesor utiliza un enfoque más "service-oriented" donde la lógica de negocio está en servicios separados (`domain/service/`). Este proyecto utiliza un enfoque más "entity-oriented" (más idiomático DDD) donde las entidades y Value Objects encapsulan su propio comportamiento:
-
-- `TicketPool.reserve()` valida stock → equivalente a `StockManager.checkAvailability()`
-- `TicketQuantity` record valida cantidad → equivalente a `PurchaseValidator.processQuantity()`
-
-Ambos enfoques son válidos y cumplen con la rúbrica del Hito 3. La diferencia es de **dónde se pone la lógica**, no de si está desacoplada.
 
 ## Modelo de datos
 
@@ -865,47 +889,6 @@ El comando finaliza con código distinto de 0 si algún test falla, lo que lo ha
 **GUI:** instalar Bruno desde [usebruno.com](https://www.usebruno.com), *Open Collection* → seleccionar `bruno/ticketera-api`, elegir el entorno `local` en el dropdown y ejecutar los requests individualmente o desde el Runner.
 
 > **Colección stateful:** la aserción del request 03 asume que Jazz Night inicia con 500 entradas disponibles. Para una corrida limpia, resetear primero el entorno: `docker compose down -v` seguido de `docker compose up -d`, reiniciar el microservicio para que `DevDataSeeder` re-siembre los datos y ejecutar la colección una sola vez.
-
-## Tecnologías y dependencias
-
-### Lenguaje y plataforma
-- **Java 17** sobre **Spring Boot 3.5.7** (`spring-boot-starter-parent`)
-- **Hibernate** como proveedor JPA (incluido en `spring-boot-starter-data-jpa`)
-
-### Build
-- **Apache Maven** — Sistema de construcción y gestión de dependencias
-- **spring-boot-maven-plugin** — Empaqueta el jar ejecutable y permite arrancar con `mvn spring-boot:run`
-
-### Infraestructura
-- **Docker / Docker Compose** — Provisiona la base de datos del microservicio (`compose.yaml`)
-- **PostgreSQL 16** — Base de datos relacional persistente (contenedor `pg-ticketera`, puerto `5433`)
-
-### Dependencias principales
-
-| Dependencia | Versión | Propósito |
-|---|---|---|
-| `spring-boot-starter-web` | gestionada por Spring Boot | API REST con Spring Web MVC y Tomcat embebido |
-| `spring-boot-starter-validation` | gestionada por Spring Boot | Validación declarativa con Jakarta Bean Validation (`@Valid`, `@NotBlank`, etc.) |
-| `spring-boot-starter-data-jpa` | gestionada por Spring Boot | Persistencia con Spring Data JPA e Hibernate |
-| `postgresql` | gestionada por Spring Boot | Driver JDBC de PostgreSQL (scope `runtime`) |
-| `springdoc-openapi-starter-webmvc-ui` | 2.8.9 | Especificación OpenAPI 3 y Swagger UI interactiva |
-
-### Dependencias de testing (scope: test)
-
-| Dependencia | Versión | Propósito |
-|---|---|---|
-| `spring-boot-starter-test` | gestionada por Spring Boot | Incluye JUnit 5 (API, engine y params), Mockito, AssertJ y MockMvc para las siguientes fases |
-
-### Plugins de Maven
-
-| Plugin | Versión | Propósito |
-|---|---|---|
-| `spring-boot-maven-plugin` | 3.5.7 | Genera el jar ejecutable y habilita `mvn spring-boot:run` |
-| `maven-surefire-plugin` | gestionada por Spring Boot | Ejecuta la suite de tests con soporte para nombres legibles de JUnit 5 |
-| `jacoco-maven-plugin` | 0.8.15 | Instrumenta el código y genera reportes de cobertura (instrucciones, ramas, métodos, líneas). Excluye `com/ticketera/infrastructure/**` y la clase bootstrap `TicketeraApplication` |
-| `jacoco-console-reporter` | 1.3.2 | Imprime un resumen de cobertura directamente en la consola |
-
-> **Nota sobre cobertura:** la capa `infrastructure` (detalles técnicos: adaptador de persistencia JPA y notificador por email), los contratos de `domain/repository` (interfaces puras sin lógica) y la clase bootstrap `TicketeraApplication` quedan **excluidos** del reporte de cobertura. Esto se configura con la propiedad `sonar.coverage.exclusions` (usada por el console-reporter) y con `<excludes>` en `jacoco-maven-plugin` (usada por el reporte HTML). La cobertura se mide sobre `domain` (entidades, value objects, excepciones) y `application` (casos de uso).
 
 ## Testing y Garantía de Calidad
 
